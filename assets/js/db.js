@@ -42,11 +42,7 @@
         if (!client) return [];
         var { data, error } = await client
             .from('products')
-            .select(`
-                id, name, quantity, price, created_at,
-                categories!products_category_id_fkey (name),
-                brands!products_brand_id_fkey (name)
-            `)
+            .select('id, name, quantity, price, created_at, categories(name), brands(name)')
             .order('name');
         if (error) { console.error('db.getProducts:', error); return []; }
 
@@ -76,25 +72,23 @@
         if (!client) return null;
         var { data, error } = await client
             .from('products')
-            .select('id, name, quantity, price')
+            .select(`
+                id, name, quantity, price,
+                categories(name), brands(name)
+            `)
             .eq('name', name)
-            .single();
+            .maybeSingle();
         if (error || !data) return null;
         var { data: photos } = await client
             .from('product_photos')
             .select('url')
             .eq('product_id', data.id)
             .order('sort_order');
-        var { data: catData } = await client
-            .from('products')
-            .select('categories(name), brands(name)')
-            .eq('id', data.id)
-            .single();
         return {
             id: data.id,
             nombre: data.name,
-            categoria: catData && catData.categories ? catData.categories.name : '',
-            marca: catData && catData.brands ? catData.brands.name : '',
+            categoria: data.categories ? data.categories.name : '',
+            marca: data.brands ? data.brands.name : '',
             cantidad: data.quantity,
             precio: parseFloat(data.price),
             fotos: (photos || []).map(function (p) { return p.url; })
