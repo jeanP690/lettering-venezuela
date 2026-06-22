@@ -142,12 +142,38 @@
         var pedidos = JSON.parse(localStorage.getItem('pedidosPendientes') || '[]');
         pedidos.push(pedido);
         localStorage.setItem('pedidosPendientes', JSON.stringify(pedidos));
+
+        // Build WhatsApp message
+        var waNum = '584121234567';
+        try {
+            var ci = JSON.parse(localStorage.getItem('contactoInfo') || '{}');
+            if (ci.whatsapp) waNum = ci.whatsapp;
+        } catch (e) {}
+        var msg = '🛍️ *Nuevo Pedido* (' + pedido.id + ')%0A%0A';
+        msg += '*Productos:*%0A';
+        cart.forEach(function (item, i) {
+            var q = item.cantidad || item.quantity || 1;
+            var p = item.precio || item.price || 0;
+            var n = item.nombre || item.name || 'Producto';
+            msg += (i + 1) + '. ' + n + ' x' + q + ' = $' + (p * q).toFixed(2) + '%0A';
+        });
+        msg += '%0A*Total: $' + pedido.totalUSD.toFixed(2) + '*';
+        if (pedido.totalBS > 0) msg += ' (%0ABs. ' + pedido.totalBS.toFixed(2) + ')';
+        msg += '%0A%0A*Cliente:* ' + (user ? user.nombre || 'Sin registrar' : 'Sin registrar');
+        if (user && user.tel) msg += '%0A*Tel:* ' + user.tel;
+        if (user && user.email) msg += '%0A*Email:* ' + user.email;
+        msg += '%0A%0A¡Gracias por tu pedido! 🎉';
+
         clearCart();
         closeCart();
+
+        // Open WhatsApp
+        window.open('https://wa.me/' + waNum + '?text=' + msg, '_blank');
+
         if (user && window.Users && typeof window.Users.showToast === 'function') {
             window.Users.showToast('Pedido enviado ' + user.nombre.split(' ')[0] + '! Lo veras en tu historial.', 'success');
         } else {
-            alert('Pedido enviado! Nos pondremos en contacto contigo para confirmar el pago y la entrega.');
+            alert('Pedido enviado! Te redirigimos a WhatsApp para confirmar.');
         }
     }
 
