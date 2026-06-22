@@ -280,6 +280,7 @@
     }
 
     async function quickAdd(nombre, ev) {
+        if (!window.Cart) { console.error('quickAdd: Cart no esta definido'); return; }
         var inventario = await getInventario();
         var p = inventario.find(function (i) { return i.nombre === nombre; });
         if (!p) return;

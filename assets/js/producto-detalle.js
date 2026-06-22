@@ -169,6 +169,7 @@
 
     function addToCart() {
         if (!currentProduct) return;
+        if (!window.Cart) { console.error('addToCart: Cart no esta definido'); return; }
         var qty = parseInt(document.getElementById('detalle-qty-input').value, 10) || 1;
         window.Cart.add(currentProduct, qty);
         var btn = document.querySelector('.detalle-add-cart');

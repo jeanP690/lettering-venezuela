@@ -254,6 +254,7 @@
     }
 
     function addToCart(nombre, ev) {
+        if (!window.Cart) { console.error('home.addToCart: Cart no esta definido'); return; }
         var p = currentProducts.find(function (i) { return i.nombre === nombre; });
         if (!p) return;
         window.Cart.add(p, 1);
