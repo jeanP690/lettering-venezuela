@@ -75,7 +75,7 @@
             .from('products')
             .select(`
                 id, name, quantity, price,
-                categories(name), brands(name)
+                categories:category_id(name), brands:brand_id(name)
             `)
             .eq('name', name)
             .maybeSingle();
@@ -246,13 +246,7 @@
     async function getSales() {
         var client = getClient();
         if (!client) return [];
-        var { data, error } = await client.from('sales').select(`
-            *,
-            clients (name, phone),
-            sale_items (*),
-            sale_photos (*),
-            payment_records (*)
-        `).order('created_at', { ascending: false });
+        var { data, error } = await client.from('sales').select('*, clients:client_id(name, phone), sale_items(*), sale_photos(*), payment_records(*)').order('created_at', { ascending: false });
         if (error) return [];
         return data || [];
     }
