@@ -73,8 +73,8 @@
         if (bsEl) bsEl.textContent = window.Currency.formatBS(getTotalBS());
     }
 
-    function escapeHtml(s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]; }); }
-    function escapeAttr(s) { return String(s || '').replace(/'/g, \"\\\\'\"); }
+    function escapeHtml(s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function escapeAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
 
     function openCart() {
         renderCartPanel();

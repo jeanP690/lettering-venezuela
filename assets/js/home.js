@@ -80,7 +80,7 @@
         } catch (e) {}
     }
 
-    function escapeHtml(s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]; }); }
+    function escapeHtml(s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
     function safeCurrency(fn, fallback) {
         return window.Currency && typeof window.Currency[fn] === 'function' ? window.Currency[fn]() : fallback;
@@ -111,7 +111,7 @@
             + '<div class=\"producto-card-actions\">' + actionsHtml + '</div></div></div></div>';
     }
 
-    function escapeAttr(s) { return String(s || '').replace(/'/g, \"\\\\'\"); }
+    function escapeAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
 
     async function renderCarousel() {
         var track = document.getElementById('home-carousel-track');
@@ -224,7 +224,7 @@
             var foto = c.foto;
             var hasFoto = foto && foto.length > 0;
             return '<a href=\"' + (window.LETTERING_BASE || '') + '/productos/?categoria=' + encodeURIComponent(c.nombre) + '\" class=\"filter-card\">'
-                + '<div class=\"filter-card-image' + (hasFoto ? '' : ' is-placeholder') + '\" style=\"' + (hasFoto ? \"background-image:url('\" + foto + \"')\" : '') + '\">' + (hasFoto ? '' : escapeHtml(c.nombre.charAt(0).toUpperCase())) + '</div>'
+                + '<div class=\"filter-card-image' + (hasFoto ? '' : ' is-placeholder') + '\" style=\"' + (hasFoto ? "background-image:url('" + foto + "')" : '') + '\">' + (hasFoto ? '' : escapeHtml(c.nombre.charAt(0).toUpperCase())) + '</div>'
                 + '<div class=\"filter-card-body\"><p class=\"filter-card-name\">' + escapeHtml(c.nombre) + '</p><p class=\"filter-card-count\">' + count + ' producto' + (count !== 1 ? 's' : '') + '</p></div></a>';
         }).join('');
     }
@@ -244,7 +244,7 @@
             var foto = m.foto;
             var hasFoto = foto && foto.length > 0;
             return '<a href=\"' + (window.LETTERING_BASE || '') + '/productos/?marca=' + encodeURIComponent(m.nombre) + '\" class=\"filter-card\">'
-                + '<div class=\"filter-card-image' + (hasFoto ? '' : ' is-placeholder') + '\" style=\"' + (hasFoto ? \"background-image:url('\" + foto + \"')\" : '') + '\">' + (hasFoto ? '' : escapeHtml(m.nombre.charAt(0).toUpperCase())) + '</div>'
+                + '<div class=\"filter-card-image' + (hasFoto ? '' : ' is-placeholder') + '\" style=\"' + (hasFoto ? "background-image:url('" + foto + "')" : '') + '\">' + (hasFoto ? '' : escapeHtml(m.nombre.charAt(0).toUpperCase())) + '</div>'
                 + '<div class=\"filter-card-body\"><p class=\"filter-card-name\">' + escapeHtml(m.nombre) + '</p><p class=\"filter-card-count\">' + count + ' producto' + (count !== 1 ? 's' : '') + '</p></div></a>';
         }).join('');
     }
