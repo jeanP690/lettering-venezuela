@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Contáctanos por WhatsApp, Instagram, Facebook o comparte nuestra página.">
+    <title>lettering venezuela</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/contact.css">
+</head>
+<body>
+    <div id="site-header"></div>
+
+    <main>
+        <section class="contact-hero">
+            <h1>Contáctanos</h1>
+            <p>Estamos en todos lados. Elige tu canal favorito y hablemos de lettering.</p>
+        </section>
+
+        <section class="contact-grid">
+            <a href="https://wa.me/584121234567?text=Hola%2C%20me%20interesan%20sus%20productos"
+               target="_blank" rel="noopener" class="contact-card whatsapp">
+                <div class="contact-icon">💬</div>
+                <h2>WhatsApp</h2>
+                <p>Chatea con nosotros directamente. Respuesta rápida y atención personalizada.</p>
+                <span class="contact-cta">Enviar mensaje →</span>
+            </a>
+
+            <a href="https://instagram.com/letteringvzla"
+               target="_blank" rel="noopener" class="contact-card instagram">
+                <div class="contact-icon">📷</div>
+                <h2>Instagram</h2>
+                <p>Síguenos y mira nuestro trabajo diario, novedades y promociones especiales.</p>
+                <span class="contact-cta">Ver perfil →</span>
+            </a>
+
+            <a href="https://facebook.com/letteringvzla"
+               target="_blank" rel="noopener" class="contact-card facebook">
+                <div class="contact-icon">📘</div>
+                <h2>Facebook</h2>
+                <p>Únete a nuestra comunidad y entérate de eventos, talleres y lanzamientos.</p>
+                <span class="contact-cta">Visitar página →</span>
+            </a>
+
+            <button onclick="Contact.sharePage()" class="contact-card share">
+                <div class="contact-icon">🔗</div>
+                <h2>Compartir</h2>
+                <p>Comparte esta página con alguien que ame el lettering tanto como tú.</p>
+                <span class="contact-cta">Compartir enlace →</span>
+            </button>
+        </section>
+
+        <section class="more-sections">
+            <h2 class="section-title section-title-box">Continúa explorando</h2>
+            <p class="more-sections-subtitle">Descubre todo lo que tenemos para ti</p>
+            <div class="more-grid">
+                <a href="../" class="more-card">
+                    <div class="more-card-icon">🏠</div>
+                    <h3>Inicio</h3>
+                    <p>Volver a la página principal y ver lo más destacado.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+                <a href="../productos/" class="more-card">
+                    <div class="more-card-icon">📦</div>
+                    <h3>Ver Productos</h3>
+                    <p>Explora nuestro catálogo completo con marcadores, sets y más.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+                <a href="../historial/" class="more-card">
+                    <div class="more-card-icon">🛍️</div>
+                    <h3>Mis Compras</h3>
+                    <p>Revisa el estado de tus pedidos y tu historial de compras.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <div id="copy-toast" class="copy-toast">✓ Enlace copiado al portapapeles</div>
+
+    <div id="site-footer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/lib/supabase.js"></script>
+    <script src="../assets/js/db.js"></script>
+    <script src="../assets/js/upload.js"></script>
+    <script src="../assets/js/currency.js"></script>
+    <script src="../assets/js/cart.js"></script>
+    <script src="../assets/js/users.js"></script>
+    <script src="../assets/js/layout.js"></script>
+    <script>
+        /**
+         * Lógica de compartir: usa Web Share API si está disponible,
+         * si no, copia el enlace al portapapeles.
+         */
+        var Contact = {
+            sharePage: function () {
+                var data = {
+                    title: 'Lettering Venezuela',
+                    text: 'Mira esta tienda de lettering en Venezuela',
+                    url: window.location.origin + (window.LETTERING_BASE || '') + '/'
+                };
+
+                if (navigator.share) {
+                    navigator.share(data).catch(function (err) {
+                        // El usuario canceló o hubo error, intentar fallback
+                        if (err.name !== 'AbortError') Contact.copyToClipboard(data.url);
+                    });
+                } else {
+                    Contact.copyToClipboard(data.url);
+                }
+            },
+
+            copyToClipboard: function (text) {
+                var showToast = function () {
+                    var toast = document.getElementById('copy-toast');
+                    if (toast) {
+                        toast.classList.add('show');
+                        setTimeout(function () { toast.classList.remove('show'); }, 2500);
+                    }
+                };
+
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(showToast).catch(function () {
+                        Contact.fallbackCopy(text, showToast);
+                    });
+                } else {
+                    Contact.fallbackCopy(text, showToast);
+                }
+            },
+
+            fallbackCopy: function (text, cb) {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); cb && cb(); } catch (e) { /* noop */ }
+                document.body.removeChild(ta);
+            }
+        };
+    </script>
+</body>
+</html>

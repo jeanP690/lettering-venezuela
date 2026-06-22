@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Catálogo completo de productos de lettering venezuela - Marcadores, sets, metálicos y más.">
+    <title>lettering venezuela</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/gallery.css">
+</head>
+<body>
+    <div id="site-header"></div>
+
+    <main>
+        <div class="main-layout">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2 class="sidebar-title">Filtros</h2>
+                    <button class="sidebar-clear" onclick="Gallery.clearFilters()">Limpiar</button>
+                </div>
+                <div class="filter-section">
+                    <h3>Marcas</h3>
+                    <ul class="filter-list" id="filter-marcas"></ul>
+                </div>
+                <div class="filter-section">
+                    <h3>Categorías</h3>
+                    <ul class="filter-list" id="filter-categorias"></ul>
+                </div>
+                <button class="btn-clear-filters" onclick="Gallery.clearFilters()">Limpiar filtros</button>
+            </aside>
+
+            <section class="galeria-content">
+                <div class="page-header">
+                    <div>
+                        <h1>Nuestros Productos</h1>
+                        <p id="productos-count">Cargando...</p>
+                    </div>
+                </div>
+
+                <div id="productos-empty" class="empty-state" style="display:none;">
+                    <div class="empty-state-icon">📦</div>
+                    <h3>¡Pronto tendremos novedades!</h3>
+                    <p>Estamos preparando nuestro catálogo. Síguenos en redes para no perderte nada.</p>
+                </div>
+                <div class="productos-grid" id="productos-grid"></div>
+            </section>
+        </div>
+
+        <section class="more-sections">
+            <h2 class="section-title section-title-box">Continúa explorando</h2>
+            <p class="more-sections-subtitle">Descubre todo lo que tenemos para ti</p>
+            <div class="more-grid">
+                <a href="../" class="more-card">
+                    <div class="more-card-icon">🏠</div>
+                    <h3>Inicio</h3>
+                    <p>Volver a la página principal y ver lo más destacado.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+                <a href="../historial/" class="more-card">
+                    <div class="more-card-icon">🛍️</div>
+                    <h3>Mis Compras</h3>
+                    <p>Revisa el estado de tus pedidos y tu historial de compras.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+                <a href="../contacto/" class="more-card">
+                    <div class="more-card-icon">💬</div>
+                    <h3>Contáctanos</h3>
+                    <p>¿Te gustó algo? Escríbenos para consultas y pedidos.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/lib/supabase.js"></script>
+    <script src="../assets/js/db.js"></script>
+    <script src="../assets/js/upload.js"></script>
+    <script src="../assets/js/currency.js"></script>
+    <script src="../assets/js/cart.js"></script>
+    <script src="../assets/js/users.js"></script>
+    <script src="../assets/js/layout.js"></script>
+    <script src="../assets/js/gallery.js"></script>
+</body>
+</html>

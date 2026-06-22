@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Detalle del producto - lettering venezuela">
+    <title>lettering venezuela</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/producto-detalle.css">
+</head>
+<body>
+    <div id="site-header"></div>
+
+    <main>
+        <div class="detalle-container">
+            <a href="index.html" class="detalle-back">← Volver a productos</a>
+
+            <div class="detalle-loader" id="detalle-loader">
+                <div class="loader-spinner"></div>
+                <p>Cargando producto...</p>
+            </div>
+
+            <div class="detalle-error" id="detalle-error" style="display:none;">
+                <div class="detalle-error-icon">😕</div>
+                <h2>Producto no encontrado</h2>
+                <p>El producto que buscas no existe o ha sido eliminado.</p>
+                <a href="index.html" class="btn-primary">Ver todos los productos</a>
+            </div>
+
+            <div class="detalle-content" id="detalle-content" style="display:none;">
+                <div class="detalle-grid">
+                    <div class="detalle-gallery" id="detalle-gallery">
+                        <div class="detalle-main-image" id="detalle-main-image">
+                            <img id="detalle-img-main" src="" alt="">
+                            <div class="detalle-img-placeholder" id="detalle-img-placeholder">📦</div>
+                        </div>
+                        <div class="detalle-thumbs" id="detalle-thumbs"></div>
+                    </div>
+
+                    <div class="detalle-info">
+                        <div class="detalle-breadcrumb" id="detalle-breadcrumb"></div>
+                        <h1 class="detalle-name" id="detalle-name"></h1>
+                        <p class="detalle-brand" id="detalle-brand"></p>
+
+                        <div class="detalle-prices">
+                            <span class="detalle-price-usd" id="detalle-price-usd"></span>
+                            <span class="detalle-price-bs" id="detalle-price-bs"></span>
+                        </div>
+
+                        <div class="detalle-stock" id="detalle-stock"></div>
+
+                        <div class="detalle-qty">
+                            <label>Cantidad</label>
+                            <div class="detalle-qty-controls">
+                                <button onclick="ProductoDetalle.qtyDec()" aria-label="Restar">−</button>
+                                <input type="number" id="detalle-qty-input" value="1" min="1">
+                                <button onclick="ProductoDetalle.qtyInc()" aria-label="Sumar">+</button>
+                            </div>
+                        </div>
+
+                        <button class="detalle-add-cart" onclick="ProductoDetalle.addToCart()">
+                            🛒 Añadir al carrito
+                        </button>
+
+                        <div class="detalle-description">
+                            <h3>Descripción</h3>
+                            <p id="detalle-description"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detalle-related" id="detalle-related">
+                    <h2 class="detalle-related-title">Productos Relacionados</h2>
+                    <div class="detalle-related-grid" id="detalle-related-grid"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/lib/supabase.js"></script>
+    <script src="../assets/js/db.js"></script>
+    <script src="../assets/js/upload.js"></script>
+    <script src="../assets/js/currency.js"></script>
+    <script src="../assets/js/cart.js"></script>
+    <script src="../assets/js/users.js"></script>
+    <script src="../assets/js/layout.js"></script>
+    <script src="../assets/js/producto-detalle.js"></script>
+</body>
+</html>

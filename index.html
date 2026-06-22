@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="lettering venezuela - Tienda online de herramientas para artistas, diseñadores y entusiastas del lettering.">
+    <title>lettering venezuela</title>
+    <link rel="icon" type="image/jpeg" href="assets/img/logo.jpg">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/home.css">
+</head>
+<body>
+    <div id="site-header"></div>
+
+    <main>
+        <section class="hero">
+            <h1>Bienvenido a Lettering Venezuela</h1>
+            <p>Herramientas de alta calidad para artistas, diseñadores y entusiastas del lettering. Encuentra los mejores marcadores, sets y más.</p>
+            <div class="hero-cta-group">
+                <a href="productos/" class="hero-cta">Ver Productos →</a>
+                <a href="contacto/" class="hero-cta hero-cta-secondary">Contáctanos →</a>
+            </div>
+        </section>
+
+        <section class="carousel-section">
+            <div class="carousel-header" style="justify-content: flex-end;">
+                <a href="productos/" class="carousel-view-all">Ver todos →</a>
+            </div>
+            <div class="carousel" id="home-carousel">
+                <button class="carousel-prev" onclick="Home.carouselPrev()" aria-label="Anterior">‹</button>
+                <div class="carousel-viewport">
+                    <div class="carousel-track" id="home-carousel-track"></div>
+                </div>
+                <button class="carousel-next" onclick="Home.carouselNext()" aria-label="Siguiente">›</button>
+            </div>
+            <div class="carousel-indicators" id="carousel-indicators"></div>
+        </section>
+
+        <section class="cards-section">
+            <h2 class="section-title section-title-box">Explora por Categoría</h2>
+            <div id="home-categories"></div>
+        </section>
+
+        <section class="cards-section">
+            <h2 class="section-title section-title-box">Nuestras Marcas</h2>
+            <div id="home-brands"></div>
+        </section>
+
+        <section class="more-sections">
+            <h2 class="section-title section-title-box">Continúa explorando</h2>
+            <p class="more-sections-subtitle">Descubre todo lo que tenemos para ti</p>
+            <div class="more-grid">
+                <a href="productos/" class="more-card">
+                    <div class="more-card-icon">📦</div>
+                    <h3>Ver Productos</h3>
+                    <p>Explora nuestro catálogo completo con marcadores, sets y más.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+                <a href="historial/" class="more-card">
+                    <div class="more-card-icon">🛍️</div>
+                    <h3>Mis Compras</h3>
+                    <p>Revisa el estado de tus pedidos y tu historial de compras.</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+                <a href="contacto/" class="more-card">
+                    <div class="more-card-icon">💬</div>
+                    <h3>Contáctanos</h3>
+                    <p>Estamos en WhatsApp, Instagram y Facebook. ¡Hablemos!</p>
+                    <span class="more-card-arrow">→</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/lib/supabase.js"></script>
+    <script src="assets/js/db.js"></script>
+    <script src="assets/js/upload.js"></script>
+    <script src="assets/js/currency.js"></script>
+    <script src="assets/js/cart.js"></script>
+    <script src="assets/js/users.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script src="assets/js/home.js"></script>
+</body>
+</html>

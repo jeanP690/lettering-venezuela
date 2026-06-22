@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lettering venezuela</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/lib/supabase.js"></script>
+    <script src="../assets/js/db.js"></script>
+    <script src="../assets/js/upload.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-circle">LV</div>
+                <h2>Lettering<span>Vzla</span></h2>
+            </div>
+            <nav class="menu">
+                <button class="menu-item active" onclick="mostrarSeccion('sec-dashboard')">📊 Dashboard</button>
+                <button class="menu-item" onclick="mostrarSeccion('sec-clientes')">👥 Clientes</button>
+                <button class="menu-item" onclick="mostrarSeccion('sec-productos')">📦 Productos</button>
+                <button class="menu-item" onclick="mostrarSeccion('sec-pedidos')">🛒 Pedidos</button>
+                <button class="menu-item" onclick="mostrarSeccion('sec-usuarios')">👤 Usuarios</button>
+                <button class="menu-item" onclick="mostrarSeccion('sec-historial')">📜 Historial</button>
+                <button class="menu-item" onclick="mostrarSeccion('sec-config')">⚙️ Configuración</button>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <section id="sec-dashboard" class="tab-content active">
+                <div class="title-container">
+                    <h1>Panel de Control (Dashboard)</h1>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card card-productos-unicos">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-info-box">
+                            <h3>Productos Únicos</h3>
+                            <p id="dash-prod-totales">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-stock-total">
+                        <div class="stat-icon">🧱</div>
+                        <div class="stat-info-box">
+                            <h3>Stock Total</h3>
+                            <p id="dash-stock-total">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-stock-escaso">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-info-box">
+                            <h3>Stock Escaso (≤5)</h3>
+                            <p id="dash-stock-escaso">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-unidades-vendidas">
+                        <div class="stat-icon">🛒</div>
+                        <div class="stat-info-box">
+                            <h3>Unidades Vendidas</h3>
+                            <p id="dash-stock-vendido">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-clientes-reg">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info-box">
+                            <h3>Clientes Registrados</h3>
+                            <p id="dash-clientes">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-ventas-totales">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-info-box">
+                            <h3>Ventas Totales</h3>
+                            <p id="dash-total-vendido">$0.00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-total-cobrado">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info-box">
+                            <h3>Total Cobrado</h3>
+                            <p id="dash-total-pagado">$0.00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-cuentas-cobrar">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-info-box">
+                            <h3>Cuentas por Cobrar</h3>
+                            <p id="dash-deudas">$0.00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-pedidos-pendientes" style="border-left: 5px solid #f59e0b;">
+                        <div class="stat-icon">🛒</div>
+                        <div class="stat-info-box">
+                            <h3>Pedidos Online Pendientes</h3>
+                            <p id="dash-pedidos-pendientes">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card-usuarios-reg" style="border-left: 5px solid #4f46e5;">
+                        <div class="stat-icon">👤</div>
+                        <div class="stat-info-box">
+                            <h3>Usuarios Web Registrados</h3>
+                            <p id="dash-usuarios">0</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-clientes" class="tab-content">
+                <div class="title-container">
+                    <h1>Gestión de Clientes y Cuentas por Cobrar</h1>
+                </div>
+
+                <div class="action-buttons-bar">
+                    <button class="btn-toggle-form" onclick="toggleFormulario('form-container-cliente')">➕ Registrar Nuevo Cliente</button>
+                </div>
+
+                <div id="form-container-cliente" class="form-horizontal-container collapsible-form">
+                    <div class="form-header-row">
+                        <h2>Registrar Venta</h2>
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <div class="tasa-card" id="tasa-card-form">
+                                <span class="tasa-label">💵 Tasa del día</span>
+                                <span class="tasa-valor" id="tasa-valor-form">—</span>
+                            </div>
+                            <button type="button" class="btn-cancel" onclick="limpiarFormularioCliente()" style="padding:10px 18px;border-radius:12px;font-weight:700;font-size:0.9rem;white-space:nowrap;min-width:140px;display:flex;align-items:center;justify-content:center;gap:6px;">🗑️ Limpiar</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group existente-group">
+                        <label for="cli-buscar-existente">🔍 Cliente ya registrado (seleccionar para agilizar)</label>
+                        <input type="text" id="cli-buscar-existente" class="existentes-input" placeholder="Escriba nombre o teléfono..." autocomplete="off">
+                        <div id="cli-resultados-existentes" class="existentes-dropdown"></div>
+                    </div>
+
+                    <form id="form-cliente" class="form-grid-dos-columnas">
+                        <div class="form-group span-completo">
+                            <div class="form-row-tres">
+                                <div class="form-group" style="gap:4px;">
+                                    <label for="cli-fecha-registro">Fecha Venta *</label>
+                                    <input type="date" id="cli-fecha-registro" required>
+                                </div>
+                                <div class="form-group" style="gap:4px;">
+                                    <label for="cli-nombre">Nombre Cliente *</label>
+                                    <input type="text" id="cli-nombre" placeholder="Ej. María Pérez" required>
+                                </div>
+                                <div class="form-group" style="gap:4px;">
+                                    <label for="cli-telefono">Teléfono *</label>
+                                    <input type="tel" id="cli-telefono" placeholder="Ej. 04121234567" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group span-completo">
+                            <label>Productos *</label>
+                            <div id="productos-container">
+                                <div class="producto-fila">
+                                    <div class="product-search-wrapper">
+                                        <input type="text" class="cli-producto-input" placeholder="Buscar producto..." autocomplete="off">
+                                        <div class="product-search-dropdown"></div>
+                                    </div>
+                                    <input type="number" class="cli-producto-cant" value="1" min="1" style="width:60px;height:45px;padding:6px 8px;border-radius:10px;border:1px solid var(--border-darker);font-family:inherit;font-size:0.9rem;background:#f8fafc;text-align:center;flex-shrink:0;">
+                                    <button type="button" class="btn-remove-prod" onclick="this.parentElement.remove()" style="display:none;">✕</button>
+                                </div>
+                            </div>
+                            <button type="button" id="btn-agregar-producto" class="btn-add-prod" onclick="agregarFilaProducto()">+ Agregar otro producto</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="cli-total">Total ($) *</label>
+                            <input type="number" id="cli-total" step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cli-total-bs">Total (Bs.)</label>
+                            <input type="number" id="cli-total-bs" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="cli-pagado">Pagado ($) *</label>
+                            <input type="number" id="cli-pagado" step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cli-pagado-bs">Pagado (Bs.)</label>
+                            <input type="number" id="cli-pagado-bs" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group span-completo">
+                            <label>Recibo</label>
+                            <label for="cli-recibo" class="file-upload-btn-recibo">📁 Adjuntar Recibo</label>
+                            <input type="file" id="cli-recibo" accept="image/*" multiple style="display: none;">
+                            <div id="recibo-preview-area" class="recibo-preview-grid" style="margin-top:8px;"></div>
+                        </div>
+                        <div class="form-group span-completo" style="display:flex;gap:8px;flex-direction:row;">
+                            <button type="submit" class="btn-primary" style="flex:1;padding:14px;border-radius:10px;font-weight:700;font-size:1rem;">Registrar Cliente</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container-flex" style="margin-top: 15px;">
+                    <div class="clientes-filter-bar">
+                        <div class="clientes-filter-tabs" id="clientes-filter-tabs">
+                            <button class="clientes-filter-btn active" data-filter="all" onclick="Clientes.setFilter('all')">📋 Todos</button>
+                            <button class="clientes-filter-btn" data-filter="debt" onclick="Clientes.setFilter('debt')">⚠️ Con deuda</button>
+                            <button class="clientes-filter-btn" data-filter="paid" onclick="Clientes.setFilter('paid')">✅ Pagados</button>
+                        </div>
+                        <div class="search-container" style="margin:0; flex:1; max-width:400px;">
+                            <input type="text" id="buscar-cliente" placeholder="🔍 Buscar cliente..." oninput="renderizarClientes()">
+                        </div>
+                    </div>
+                    <div id="clientes-table-container"></div>
+                </div>
+            </section>
+
+            <section id="sec-productos" class="tab-content">
+                <div class="title-container">
+                    <h1>Almacén e Inventario de Productos</h1>
+                </div>
+
+                <div class="sub-tabs">
+                    <button id="btn-sub-categorias" class="sub-tab-item active" onclick="cambiarSubSeccion('categorias')">📁 Categorías</button>
+                    <button id="btn-sub-marcas" class="sub-tab-item" onclick="cambiarSubSeccion('marcas')">🏷️ Marcas</button>
+                    <button id="btn-sub-inventario" class="sub-tab-item" onclick="cambiarSubSeccion('inventario')">📦 Inventario Global</button>
+                </div>
+
+                <div id="subsec-categorias" class="sub-tab-content active">
+                    <div class="action-buttons-bar">
+                        <button class="btn-toggle-form" onclick="toggleFormulario('form-container-categoria')">➕ Agregar Categoría</button>
+                    </div>
+                    <div class="grid-form-tabla-productos">
+                        <div id="form-container-categoria" class="form-container collapsible-form">
+                            <h2>Nueva Categoría</h2>
+                            <form id="form-categoria">
+                                <div class="form-group">
+                                    <label for="cat-nombre">Nombre de la Categoría *</label>
+                                    <input type="text" id="cat-nombre" placeholder="Ej. Resaltadores" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Foto de Categoría</label>
+                                    <label for="cat-foto" class="file-upload-btn">📁 Seleccionar Foto</label>
+                                    <input type="file" id="cat-foto" accept="image/*" style="display: none;">
+                                    <span id="num-fotos-cat" class="file-status">Ninguna</span>
+                                </div>
+                                <button type="submit" class="btn-primary">Guardar Categoría</button>
+                            </form>
+                        </div>
+                        <div class="table-container-flex">
+                            <div class="search-container">
+                                <input type="text" id="buscar-categoria" placeholder="🔍 Buscar categoría..." oninput="renderizarCategorias()">
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="modern-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 80px;">Foto</th>
+                                            <th>Categoría</th>
+                                            <th style="text-align: center; width: 140px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-categorias"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="subsec-marcas" class="sub-tab-content">
+                    <div class="action-buttons-bar">
+                        <button class="btn-toggle-form" onclick="toggleFormulario('form-container-marca')">➕ Agregar Marca</button>
+                    </div>
+                    <div class="grid-form-tabla-productos">
+                        <div id="form-container-marca" class="form-container collapsible-form">
+                            <h2>Nueva Marca</h2>
+                            <form id="form-marca">
+                                <div class="form-group">
+                                    <label for="mar-nombre">Nombre de la Marca *</label>
+                                    <input type="text" id="mar-nombre" placeholder="Ej. Pelikan" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Foto de la Marca</label>
+                                    <label for="mar-foto" class="file-upload-btn">📁 Seleccionar Foto</label>
+                                    <input type="file" id="mar-foto" accept="image/*" style="display: none;">
+                                    <span id="num-fotos-mar" class="file-status">Ninguna</span>
+                                </div>
+                                <button type="submit" class="btn-primary">Guardar Marca</button>
+                            </form>
+                        </div>
+                        <div class="table-container-flex">
+                            <div class="search-container">
+                                <input type="text" id="buscar-marca" placeholder="🔍 Buscar marca..." oninput="renderizarMarcas()">
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="modern-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 80px;">Foto</th>
+                                            <th>Marca</th>
+                                            <th style="text-align: center; width: 140px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-marcas"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="subsec-inventario" class="sub-tab-content">
+                    <div class="action-buttons-bar" style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn-toggle-form" onclick="toggleFormulario('form-container-inventario')">➕ Agregar Producto</button>
+                        <button class="btn-toggle-form" style="background:var(--primary);" onclick="abrirModalProductosMultiples()">📦 Agregar Múltiples</button>
+                    </div>
+                    <div class="grid-form-tabla-productos">
+                        <div id="form-container-inventario" class="form-container collapsible-form">
+                            <h2>Añadir Producto</h2>
+                            <form id="inv-form">
+                                <div class="form-group">
+                                    <label for="nombre">Nombre del Producto *</label>
+                                    <input type="text" id="nombre" placeholder="Ej. Marcador Punta Pincel" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="categoria">Categoría *</label>
+                                    <select id="categoria" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="marca-select">Marca *</label>
+                                    <select id="marca-select" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cantidad">Cantidad Inicial *</label>
+                                    <input type="number" id="cantidad" min="0" placeholder="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="precio">Precio de Venta ($) *</label>
+                                    <input type="number" id="precio" step="0.01" min="0" placeholder="0.00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Fotos del Producto</label>
+                                    <label for="prod-foto" class="file-upload-btn">📁 Seleccionar Fotos</label>
+                                    <input type="file" id="prod-foto" accept="image/*" multiple style="display: none;">
+                                    <span id="num-fotos-prod" class="file-status">Ningún archivo seleccionado</span>
+                                </div>
+                                <button type="submit" class="btn-primary">Guardar en Almacén</button>
+                            </form>
+                        </div>
+
+                        <div class="table-container-flex">
+                            <div class="search-container">
+                                <input type="text" id="buscar-prod-nombre" placeholder="🔍 Buscar por nombre, marca o categoría..." oninput="renderizarTabla()">
+                            </div>
+                            <div class="table-wrapper text-scrollable">
+                                <table class="modern-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 80px;">Fotos</th>
+                                            <th>Producto</th>
+                                            <th>Categoría</th>
+                                            <th>Marca</th>
+                                            <th>Stock</th>
+                                            <th>Precio</th>
+                                            <th style="text-align: center; width: 140px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-cuerpo"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-historial" class="tab-content">
+                <div class="title-container"><h1>Historial de Ventas</h1></div>
+                <div class="table-wrapper text-scrollable">
+                    <table class="modern-table">
+                        <thead><tr><th>Fecha</th><th>Items</th><th>Total</th></tr></thead>
+                        <tbody id="tabla-historial"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="sec-pedidos" class="tab-content">
+                <div class="title-container"><h1>Pedidos (Tienda Online)</h1></div>
+                <div class="table-wrapper text-scrollable">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Contacto</th>
+                                <th>Fecha</th>
+                                <th>Items</th>
+                                <th>Total USD</th>
+                                <th>Total BS</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-pedidos"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="sec-usuarios" class="tab-content">
+                <div class="title-container"><h1>Usuarios Registrados en la Web</h1></div>
+                <div class="table-wrapper text-scrollable">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">Avatar</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Fecha de Registro</th>
+                                <th style="text-align: center; width: 140px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-usuarios"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="sec-config" class="tab-content">
+                <div class="title-container"><h1>Configuración General</h1></div>
+
+                <div class="grid-form-tabla-productos">
+                    <div class="form-container">
+                        <h2>Tasa de Cambio (USD → BS)</h2>
+
+                        <div class="form-group">
+                            <label>Modo de tasa</label>
+                            <div style="display:flex; gap:12px; margin-top:6px; flex-wrap:wrap;">
+                                <label class="modo-tasa-label" id="modo-auto-label" style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
+                                    <input type="radio" name="modo-tasa" value="auto" onchange="cambiarModoTasa('auto')"> Automático (API)
+                                </label>
+                                <label class="modo-tasa-label" id="modo-manual-label" style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
+                                    <input type="radio" name="modo-tasa" value="manual" onchange="cambiarModoTasa('manual')"> Manual
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="tasa-auto-section" style="display:none;">
+                            <div class="form-group">
+                                <label>Fuente</label>
+                                <div style="display:flex; gap:12px; margin-top:6px; flex-wrap:wrap;">
+                                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
+                                        <input type="radio" name="fuente-tasa" value="oficial" onchange="cambiarFuenteTasa('oficial')"> BCV (Oficial)
+                                    </label>
+                                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
+                                        <input type="radio" name="fuente-tasa" value="paralelo" onchange="cambiarFuenteTasa('paralelo')"> Paralelo / BSV
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Tasa actual</label>
+                                <p id="cfg-auto-rate" style="background:var(--bg-light); padding:12px 16px; border-radius:10px; font-family:monospace; margin:0; font-size:1.2rem; font-weight:700;">Bs. —</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Última actualización</label>
+                                <p id="cfg-auto-update" style="color:#64748b; font-size:0.85rem; margin:0;">—</p>
+                            </div>
+                            <button type="button" class="btn-primary" onclick="actualizarTasaAuto()" id="btn-actualizar-auto" style="display:inline-flex; align-items:center; gap:6px;">🔄 Actualizar ahora</button>
+                            <p style="margin-top:12px; color:#64748b; font-size:0.85rem;">La tasa se obtiene automáticamente de dolarapi.com. Puedes actualizarla manualmente cuando quieras.</p>
+                        </div>
+
+                        <div id="tasa-manual-section">
+                            <form id="form-tasa">
+                                <div class="form-group">
+                                    <label for="cfg-tasa">1 USD equivale a (Bs.) *</label>
+                                    <input type="number" id="cfg-tasa" step="0.01" min="0" placeholder="36.50" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Vista previa</label>
+                                    <p id="cfg-preview" style="background:var(--bg-light); padding:12px 16px; border-radius:10px; font-family:monospace; margin:0;">$10.00 → Bs. 365.00</p>
+                                </div>
+                                <button type="submit" class="btn-primary">Guardar Tasa</button>
+                            </form>
+                        </div>
+
+                        <p style="margin-top: 16px; color: #64748b; font-size: 0.85rem;">Esta tasa se usa en la tienda online para mostrar precios en Bolívares.</p>
+                    </div>
+
+                    <div class="form-container">
+                        <h2>Migración de Datos</h2>
+                        <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">Migra tus datos existentes desde localStorage a Supabase. Esto incluye productos, categorías y marcas.</p>
+                        <button type="button" class="btn-primary" onclick="migrarDatosALaNube()" id="btn-migrar" style="background:#6366f1;display:inline-flex;align-items:center;gap:6px;">☁️ Migrar datos a Supabase</button>
+                        <p id="migracion-status" style="margin-top:8px;color:#64748b;font-size:0.85rem;"></p>
+                        <hr style="margin:20px 0;border-color:#e2e8f0;">
+                    </div>
+                    <div class="form-container">
+                        <h2>Información de Contacto</h2>
+                        <form id="form-contacto-info">
+                            <div class="form-group">
+                                <label for="cfg-whatsapp">WhatsApp (con código de país)</label>
+                                <input type="tel" id="cfg-whatsapp" placeholder="584121234567">
+                            </div>
+                            <div class="form-group">
+                                <label for="cfg-instagram">Instagram (URL completa)</label>
+                                <input type="url" id="cfg-instagram" placeholder="https://instagram.com/letteringvzla">
+                            </div>
+                            <div class="form-group">
+                                <label for="cfg-facebook">Facebook (URL completa)</label>
+                                <input type="url" id="cfg-facebook" placeholder="https://facebook.com/letteringvzla">
+                            </div>
+                            <button type="submit" class="btn-primary">Guardar Contacto</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="abono-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:480px;">
+            <div class="modal-advanced-header">
+                <h3 id="abono-modal-titulo">Registrar Abono</h3>
+                <span class="modal-advanced-close" onclick="Clientes.cerrarAbono()">&times;</span>
+            </div>
+            <div class="modal-advanced-body" style="padding:24px;">
+                <p id="abono-modal-desc" style="color:#64748b; margin-bottom:16px;"></p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                    <div class="form-group" style="gap:4px;">
+                        <label>Fecha de pago</label>
+                        <input type="date" id="abono-fecha" class="table-input-compact" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="gap:4px;">
+                        <label>Tasa del día</label>
+                        <input type="number" id="abono-tasa" step="0.01" min="0" placeholder="0.00" class="table-input-compact" style="width:100%;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Monto en USD</label>
+                    <input type="number" id="abono-usd" step="0.01" min="0" placeholder="0.00" class="table-input-compact" style="width:100%;">
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>Monto en Bs. <small style="color:#94a3b8;">(se calcula automático)</small></label>
+                    <input type="number" id="abono-bs" step="0.01" min="0" placeholder="0.00" class="table-input-compact" style="width:100%;">
+                </div>
+                <div style="display:flex; gap:8px; margin-top:20px; justify-content:flex-end;">
+                    <button class="btn-cancel" onclick="Clientes.cerrarAbono()">Cancelar</button>
+                    <button class="btn-save" onclick="Clientes.guardarAbono()">💾 Registrar Abono</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="producto-foto-manager-modal" class="modal-advanced">
+        <div class="modal-advanced-card">
+            <div class="modal-advanced-header">
+                <h3 id="prod-modal-titulo">Fotos del Producto Vinculado</h3>
+                <span class="modal-advanced-close" onclick="cerrarManagerFotoProducto()">&times;</span>
+            </div>
+            <div class="modal-advanced-body">
+                <p class="modal-instruction">Galería de imágenes fijadas para este producto directamente desde el Almacén.</p>
+                <div class="recibos-gallery-container" style="justify-content: center;">
+                    <div id="prod-lista-miniaturas" class="recibos-miniaturas-flex"></div>
+                </div>
+                <div class="recibos-preview-grande-box" style="margin-top: 20px;">
+                    <img id="prod-grande-target" src="" alt="Vista previa del producto">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="producto-fotos-manager-modal" class="modal-advanced">
+        <div class="modal-advanced-card">
+            <div class="modal-advanced-header">
+                <h3 id="prod-fotos-modal-titulo">Gestión de Fotos</h3>
+                <span class="modal-advanced-close" onclick="cerrarManagerFotosProducto()">&times;</span>
+            </div>
+            <div class="modal-advanced-body">
+                <p class="modal-instruction">La primera foto es la foto principal que se mostrará en clientes. Las adicionales son para otros ángulos.</p>
+                <div id="prod-foto-principal-section" class="foto-section" style="margin-bottom:20px;padding:16px;background:#f8fafc;border-radius:12px;border:2px dashed #cbd5e1;">
+                    <div style="font-weight:700;font-size:0.9rem;color:#1e293b;margin-bottom:12px;">📸 Foto Principal</div>
+                    <div id="prod-foto-principal-area" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+                        <div style="color:#94a3b8;font-size:0.85rem;">Sin foto principal</div>
+                        <input type="file" id="input-prod-principal" accept="image/*" style="display:none;" onchange="prodFotosAgregarPrincipal(event)">
+                        <button class="btn-edit-action" onclick="document.getElementById('input-prod-principal').click()" style="padding:8px 20px;font-weight:600;">➕ Establecer foto principal</button>
+                    </div>
+                </div>
+                <div class="foto-section">
+                    <div style="font-weight:700;font-size:0.9rem;color:#1e293b;margin-bottom:12px;">🖼️ Fotos Adicionales <span id="prod-fotos-adicionales-count" style="color:#94a3b8;font-weight:400;"></span></div>
+                    <div class="recibos-gallery-container">
+                        <label for="input-prod-add-more" class="gallery-add-card">
+                            <span class="add-icon">＋</span>
+                            <span class="add-text">Añadir fotos</span>
+                        </label>
+                        <input type="file" id="input-prod-add-more" accept="image/*" multiple style="display:none;" onchange="prodFotosAgregarMas(event)">
+                        <div id="prod-fotos-lista-miniaturas" class="recibos-miniaturas-flex"></div>
+                    </div>
+                </div>
+                <div class="recibos-actions-bar" style="margin-top:12px;">
+                    <input type="file" id="input-prod-reemplazar" accept="image/*" style="display:none;" onchange="prodFotosProcesarReemplazo(event)">
+                    <button class="btn-action-recibo btn-edit-rec" onclick="document.getElementById('input-prod-reemplazar').click()">✏️ Reemplazar Selección</button>
+                    <button class="btn-action-recibo btn-delete-rec" onclick="prodFotosEliminarSeleccionada()">🗑️ Eliminar Selección</button>
+                    <button class="btn-action-recibo" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;" onclick="prodFotosEstablecerComoPrincipal()">⭐ Establecer como principal</button>
+                </div>
+                <div class="recibos-preview-grande-box">
+                    <img id="prod-fotos-grande-target" src="" alt="Vista previa">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="single-foto-manager-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:480px;">
+            <div class="modal-advanced-header">
+                <h3 id="single-foto-modal-titulo">Foto</h3>
+                <span class="modal-advanced-close" onclick="cerrarManagerSingleFoto()">&times;</span>
+            </div>
+            <div class="modal-advanced-body">
+                <p class="modal-instruction" id="single-foto-modal-desc">Gestione la foto</p>
+                <div class="recibos-preview-grande-box" style="min-height:250px;">
+                    <img id="single-foto-grande-target" src="" alt="Foto">
+                </div>
+                <div class="recibos-actions-bar">
+                    <input type="file" id="input-single-foto" accept="image/*" style="display:none;" onchange="singleFotoReemplazar(event)">
+                    <button class="btn-action-recibo btn-edit-rec" onclick="document.getElementById('input-single-foto').click()" style="flex:2;">📁 Reemplazar</button>
+                    <button class="btn-action-recibo btn-delete-rec" onclick="singleFotoEliminar()" style="flex:1;">🗑️ Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="recibos-manager-modal" class="modal-advanced">
+        <div class="modal-advanced-card">
+            <div class="modal-advanced-header">
+                <h3 id="recibos-modal-titulo">Modificación de Recibos</h3>
+                <span class="modal-advanced-close" onclick="cerrarManagerRecibos()">&times;</span>
+            </div>
+            <div class="modal-advanced-body">
+                <p class="modal-instruction">Seleccione una foto para verla en grande, editarla o elimínela. Use el botón "+" para cargar nuevas.</p>
+                <div class="recibos-gallery-container">
+                    <label for="input-add-more-photos" class="gallery-add-card">
+                        <span class="add-icon">＋</span>
+                        <span class="add-text">Añadir fotos</span>
+                    </label>
+                    <input type="file" id="input-add-more-photos" accept="image/*" multiple style="display:none;" onchange="recibosAgregarMasFotosNuevas(event)">
+                    <div id="recibos-lista-miniaturas" class="recibos-miniaturas-flex"></div>
+                </div>
+                <div class="recibos-actions-bar">
+                    <input type="file" id="input-reemplazar-foto" accept="image/*" style="display:none;" onchange="recibosProcesarReemplazo(event)">
+                    <button class="btn-action-recibo btn-edit-rec" onclick="document.getElementById('input-reemplazar-foto').click()">✏️ Reemplazar Selección</button>
+                    <button class="btn-action-recibo btn-delete-rec" onclick="recibosEliminarSeleccionada()">🗑️ Eliminar Selección</button>
+                </div>
+                <div class="recibos-preview-grande-box">
+                    <img id="recibo-grande-target" src="" alt="Vista previa de comprobante">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editar-cliente-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:750px;">
+            <div class="modal-advanced-header">
+                <h3 id="edit-cliente-modal-titulo">Editar Venta</h3>
+                <span class="modal-advanced-close" onclick="cerrarModalEdicionCliente()">&times;</span>
+            </div>
+            <div class="modal-advanced-body">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div class="form-group" style="gap:4px;">
+                        <label>Fecha Venta</label>
+                        <input type="date" id="edit-modal-fecha" class="table-input-compact" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="gap:4px;">
+                        <label>Nombre Cliente</label>
+                        <input type="text" id="edit-modal-nombre" class="table-input-compact" placeholder="Nombre" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="gap:4px;">
+                        <label>Teléfono</label>
+                        <input type="text" id="edit-modal-tel" class="table-input-compact" placeholder="Teléfono" style="width:100%;">
+                    </div>
+                </div>
+                <hr style="margin:16px 0;border-color:#e2e8f0;">
+                <p style="font-weight:700;font-size:0.9rem;color:#1e293b;margin:0 0 8px 0;">Productos</p>
+                <div id="edit-modal-productos-lista"></div>
+                <button type="button" class="btn-add-prod" onclick="agregarFilaProductoEdicionModal()" style="margin-top:8px;">+ Agregar producto</button>
+                <hr style="margin:16px 0;border-color:#e2e8f0;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group" style="gap:4px;">
+                        <label>Total ($)</label>
+                        <input type="number" id="edit-modal-total" step="0.01" class="table-input-compact" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="gap:4px;">
+                        <label>Total (Bs.)</label>
+                        <input type="number" id="edit-modal-totalbs" step="0.01" class="table-input-compact" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="gap:4px;">
+                        <label>Pagado ($)</label>
+                        <input type="number" id="edit-modal-pagado" step="0.01" class="table-input-compact" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="gap:4px;">
+                        <label>Pagado (Bs.)</label>
+                        <input type="number" id="edit-modal-pagadobs" step="0.01" class="table-input-compact" placeholder="0.00">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
+                    <button class="btn-cancel" onclick="cerrarModalEdicionCliente()" style="padding:12px 24px;border-radius:10px;font-weight:600;">Cancelar</button>
+                    <button class="btn-delete" onclick="eliminarModalEdicionCliente()" style="padding:12px 24px;border-radius:10px;font-weight:600;">🗑️ Eliminar</button>
+                    <button class="btn-save" onclick="guardarModalEdicionCliente()" style="padding:12px 24px;border-radius:10px;font-weight:600;">💾 Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="multi-prod-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:800px;">
+            <div class="modal-advanced-header">
+                <h3>Agregar Múltiples Productos</h3>
+                <span class="modal-advanced-close" onclick="cerrarModalProductosMultiples()">&times;</span>
+            </div>
+            <div class="modal-advanced-body">
+                <p class="modal-instruction">Complete los datos de cada producto. Use "Agregar otro" para añadir más filas.</p>
+                <div id="multi-prod-lista"></div>
+                <button type="button" class="btn-add-prod" onclick="agregarFilaProductoMultiple()" style="margin-top:12px;">+ Agregar otro producto</button>
+                <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
+                    <button class="btn-cancel" onclick="cerrarModalProductosMultiples()" style="padding:12px 24px;border-radius:10px;font-weight:600;">Cancelar</button>
+                    <button class="btn-primary" onclick="guardarProductosMultiples()" style="width:auto;padding:12px 24px;margin:0;">💾 Guardar Todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-modal" class="modal" onclick="cerrarModalImagen()">
+        <span class="modal-close">&times;</span>
+        <img class="modal-content-img" id="modal-img-target">
+    </div>
+
+    <script src="../assets/js/currency.js"></script>
+    <script src="../assets/js/cart.js"></script>
+    <script src="../assets/js/users.js"></script>
+    <script src="supabase-loader.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
