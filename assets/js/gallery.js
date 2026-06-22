@@ -1,4 +1,4 @@
-﻿/**
+/**
  * gallery.js
  * Galeria de productos con:
  *   - Sidebar de filtros (categoria + marca)
