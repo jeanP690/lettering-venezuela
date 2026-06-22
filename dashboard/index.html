@@ -481,6 +481,26 @@
                     </div>
 
                     <div class="form-container">
+                        <h2>Cambiar Contraseña del Dashboard</h2>
+                        <form id="form-cambiar-pass">
+                            <div class="form-group">
+                                <label for="cfg-pass-actual">Contraseña actual</label>
+                                <input type="password" id="cfg-pass-actual" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cfg-pass-nueva">Nueva contraseña</label>
+                                <input type="password" id="cfg-pass-nueva" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cfg-pass-confirmar">Confirmar nueva contraseña</label>
+                                <input type="password" id="cfg-pass-confirmar" required>
+                            </div>
+                            <p id="cfg-pass-error" style="color:#ef4444;font-size:0.85rem;display:none;margin:0 0 8px;"></p>
+                            <button type="submit" class="btn-primary">🔑 Cambiar Contraseña</button>
+                        </form>
+                        <hr style="margin:20px 0;border-color:#e2e8f0;">
+                    </div>
+                    <div class="form-container">
                         <h2>Migración de Datos</h2>
                         <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">Migra tus datos existentes desde localStorage a Supabase. Esto incluye productos, categorías y marcas.</p>
                         <button type="button" class="btn-primary" onclick="migrarDatosALaNube()" id="btn-migrar" style="background:#6366f1;display:inline-flex;align-items:center;gap:6px;">☁️ Migrar datos a Supabase</button>

@@ -1835,6 +1835,33 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarToastNotificacion('Información de contacto guardada');
     });
 
+    document.getElementById('form-cambiar-pass')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        var actual = document.getElementById('cfg-pass-actual').value;
+        var nueva = document.getElementById('cfg-pass-nueva').value;
+        var confirmar = document.getElementById('cfg-pass-confirmar').value;
+        var error = document.getElementById('cfg-pass-error');
+        if (btoa(actual) !== localStorage.getItem('dash_pass')) {
+            error.textContent = 'La contraseña actual no es correcta';
+            error.style.display = 'block';
+            return;
+        }
+        if (nueva.length < 4) {
+            error.textContent = 'La nueva contraseña debe tener al menos 4 caracteres';
+            error.style.display = 'block';
+            return;
+        }
+        if (nueva !== confirmar) {
+            error.textContent = 'Las contraseñas no coinciden';
+            error.style.display = 'block';
+            return;
+        }
+        error.style.display = 'none';
+        localStorage.setItem('dash_pass', btoa(nueva));
+        mostrarToastNotificacion('✅ Contraseña cambiada exitosamente');
+        document.getElementById('form-cambiar-pass').reset();
+    });
+
     // Actualizar tasa en formulario cuando cambie
     document.addEventListener('tasaCambiada', function() {
         actualizarTasaFormulario();

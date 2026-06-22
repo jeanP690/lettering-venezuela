@@ -8,6 +8,60 @@
 
     var _syncInProgress = false;
 
+    // ========== LOGIN GATE ==========
+    function initLoginGate() {
+        var autenticado = false;
+        try {
+            var session = JSON.parse(localStorage.getItem('dash_session') || 'null');
+            if (session && session.expira > Date.now()) autenticado = true;
+        } catch (e) {}
+        if (autenticado) return;
+
+        var overlay = document.createElement('div');
+        overlay.id = 'dash-login-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.8);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(4px);';
+        overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;max-width:400px;width:90%;box-shadow:0 25px 50px rgba(0,0,0,0.3);text-align:center;">'
+            + '<div style="font-size:48px;margin-bottom:12px;">🔐</div>'
+            + '<h2 style="margin:0 0 4px;color:#1e293b;">Dashboard</h2>'
+            + '<p style="color:#64748b;margin:0 0 24px;font-size:0.9rem;">Ingresa la contraseña para acceder</p>'
+            + '<form id="dash-login-form">'
+            + '<input type="password" id="dash-login-pass" placeholder="Contraseña" style="width:100%;padding:14px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;box-sizing:border-box;outline:none;margin-bottom:12px;" autofocus>'
+            + '<p id="dash-login-error" style="color:#ef4444;font-size:0.85rem;margin:0 0 12px;display:none;"></p>'
+            + '<button type="submit" style="width:100%;padding:14px;background:#6366f1;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Entrar</button>'
+            + '</form>'
+            + '<p style="color:#94a3b8;font-size:0.75rem;margin-top:16px;">Primera vez? Usa <strong>admin</strong> como contraseña y cámbiala después.</p>'
+            + '</div>';
+        document.body.appendChild(overlay);
+
+        // Set default password if none exists
+        if (!localStorage.getItem('dash_pass')) {
+            localStorage.setItem('dash_pass', btoa('admin'));
+        }
+
+        document.getElementById('dash-login-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var input = document.getElementById('dash-login-pass');
+            var error = document.getElementById('dash-login-error');
+            if (btoa(input.value) === localStorage.getItem('dash_pass')) {
+                localStorage.setItem('dash_session', JSON.stringify({ expira: Date.now() + 86400000 }));
+                overlay.remove();
+            } else {
+                error.textContent = 'Contraseña incorrecta';
+                error.style.display = 'block';
+                input.value = '';
+                input.focus();
+            }
+        });
+    }
+
+    function checkLoginGate() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initLoginGate);
+        } else {
+            initLoginGate();
+        }
+    }
+
     function getClient() {
         return window.Supabase && typeof window.Supabase.getClient === 'function'
             ? window.Supabase.getClient() : null;
@@ -474,10 +528,12 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
+            checkLoginGate();
             cargarDatosIniciales();
             hookActualizarSistema();
         });
     } else {
+        checkLoginGate();
         cargarDatosIniciales();
         hookActualizarSistema();
     }
