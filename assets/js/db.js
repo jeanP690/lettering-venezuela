@@ -42,9 +42,10 @@
         if (!client) return [];
         var { data, error } = await client
             .from('products')
-            .select('id, name, quantity, price, created_at, categories(name), brands(name)')
+            .select('id, name, quantity, price, created_at, categories:category_id(name), brands:brand_id(name)')
             .order('name');
         if (error) { console.error('db.getProducts:', error); return []; }
+        if (!data || data.length === 0) { console.log('db.getProducts: sin datos en Supabase'); return []; }
 
         var result = [];
         for (var i = 0; i < data.length; i++) {
