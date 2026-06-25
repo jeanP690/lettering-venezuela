@@ -1521,6 +1521,7 @@ function renderizarVentas() {
     if (!container) return;
 
     var terminoBusqueda = (document.getElementById('buscar-venta')?.value.toLowerCase() || '').trim();
+    var filtroFecha = document.getElementById('filtro-fecha-venta')?.value || '';
     var filtered = [];
     clientes.forEach(function(c, i) {
         var sd = getStatusData(c);
@@ -1531,6 +1532,10 @@ function renderizarVentas() {
             var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : []);
             var matchProd = prods.some(function(p) { return p.toLowerCase().includes(terminoBusqueda); });
             if (!matchName && !matchProd) return;
+        }
+        if (filtroFecha) {
+            var fechaVenta = (c.fechaRegistro || '').split('T')[0];
+            if (fechaVenta !== filtroFecha) return;
         }
         filtered.push({ index: i, data: c });
     });
@@ -2592,6 +2597,13 @@ document.addEventListener('DOMContentLoaded', () => {
         originalMostrarSeccion(id, sub);
         if (id === 'sec-config') cargarConfiguracion();
         if (id === 'sec-pedidos') renderizarPedidos();
+        if (id === 'sec-ventas') {
+            var fechaInput = document.getElementById('filtro-fecha-venta');
+            if (fechaInput && !fechaInput.value) {
+                fechaInput.value = new Date().toISOString().split('T')[0];
+            }
+            renderizarVentas();
+        }
     };
 
     // ========== MIGRACION A SUPABASE ==========
