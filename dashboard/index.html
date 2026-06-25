@@ -272,6 +272,7 @@
                             <label for="filtro-fecha-venta" style="font-size:0.8rem;color:#64748b;font-weight:600;white-space:nowrap;">📅</label>
                             <input type="date" id="filtro-fecha-venta" class="table-input-compact" list="lista-fechas-ventas" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-darker);font-family:inherit;font-size:0.85rem;" onchange="renderizarVentas()">
                             <datalist id="lista-fechas-ventas"></datalist>
+                            <button onclick="limpiarFiltroFechaVenta()" class="btn-edit-action" style="padding:4px 10px;font-size:0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;">📋 Todas</button>
                             <span id="dash-fechas-disponibles" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
                         </div>
                     </div>

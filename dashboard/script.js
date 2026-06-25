@@ -1597,6 +1597,12 @@ function renderizarVentas() {
     container.innerHTML = html;
 }
 
+window.limpiarFiltroFechaVenta = function() {
+    var el = document.getElementById('filtro-fecha-venta');
+    if (el) el.value = '';
+    renderizarVentas();
+};
+
 var _clientesEditandoKey = null;
 
 function renderizarClientesSimples() {
