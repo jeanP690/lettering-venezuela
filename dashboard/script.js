@@ -73,10 +73,15 @@ function toggleFormulario(idContenedor) {
         document.querySelectorAll('.collapsible-form').forEach(f => f.classList.remove('show'));
         form.classList.add('show');
         if (idContenedor === 'form-container-cliente') {
-            autoAsignarFecha();
-            actualizarTasaFormulario();
+            autoAsignarFecha('cli-fecha-registro');
+            actualizarTasaFormulario('tasa-valor-form');
             inicializarBuscadoresProducto();
             inicializarBuscadorExistente();
+        }
+        if (idContenedor === 'form-container-venta') {
+            autoAsignarFecha('venta-fecha-registro');
+            actualizarTasaFormulario('tasa-valor-form-venta');
+            inicializarBuscadoresProductoVenta();
         }
         setTimeout(function() {
             form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -105,8 +110,12 @@ function mostrarSeccion(id, subSeccionPorDefecto = 'categorias') {
     }
     if(id === 'sec-clientes') { 
         clienteEditandoIndex = null; 
-        actualizarSelectClientes(); 
-        renderizarClientes(); 
+        renderizarClientesSimples(); 
+    }
+    if(id === 'sec-ventas') { 
+        clienteEditandoIndex = null; 
+        actualizarSelectVentas(); 
+        renderizarVentas(); 
     }
     if(id === 'sec-historial') renderizarHistorial();
 }
@@ -155,6 +164,31 @@ function actualizarDashboard() {
     }
 }
 
+window.limpiarFormularioVenta = function() {
+    document.getElementById('form-venta').reset();
+    document.querySelectorAll('#productos-container-venta .cli-producto-input').forEach(function(inp, i) {
+        inp.value = '';
+        var fila = inp.closest('.producto-fila');
+        if (fila) {
+            var cantInput = fila.querySelector('.cli-producto-cant');
+            if (cantInput) cantInput.value = '1';
+        }
+        if (i > 0) fila?.remove();
+    });
+    document.querySelectorAll('#productos-container-venta .btn-remove-prod').forEach(function(b) {
+        b.style.display = 'none';
+    });
+    ['venta-total', 'venta-total-bs', 'venta-pagado', 'venta-pagado-bs'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    var fotoStatus = document.getElementById('num-fotos-venta');
+    if (fotoStatus) fotoStatus.innerText = "Ninguno";
+    document.getElementById('recibo-preview-area-venta').innerHTML = '';
+    document.getElementById('venta-cliente-select').value = '';
+    autoAsignarFecha('venta-fecha-registro');
+};
+
 window.limpiarFormularioCliente = function() {
     document.getElementById('form-cliente').reset();
     document.querySelectorAll('.cli-producto-input').forEach(function(inp, i) {
@@ -182,10 +216,56 @@ window.limpiarFormularioCliente = function() {
 };
 
 function actualizarSelectClientes() {
-    actualizarTasaFormulario();
-    autoAsignarFecha();
+    actualizarTasaFormulario('tasa-valor-form');
+    autoAsignarFecha('cli-fecha-registro');
     inicializarBuscadoresProducto();
     inicializarBuscadorExistente();
+}
+function actualizarSelectVentas() {
+    actualizarTasaFormulario('tasa-valor-form-venta');
+    autoAsignarFecha('venta-fecha-registro');
+    inicializarBuscadoresProductoVenta();
+    actualizarSelectClientesVenta();
+}
+function inicializarBuscadoresProductoVenta() {
+    document.querySelectorAll('#productos-container-venta .cli-producto-input').forEach(function(inp) {
+        if (inp._listenerInicializado) return;
+        inp._listenerInicializado = true;
+        inp.addEventListener('input', function() { Ventas.filtrarProductos(this); });
+        inp.addEventListener('blur', function() { setTimeout(function() { Ventas.cerrarProductDropdown(inp); }, 200); });
+        inp.addEventListener('focus', function() { if (this.value) Ventas.filtrarProductos(this); });
+        var fila = inp.closest('.producto-fila');
+        if (fila) {
+            var cantInput = fila.querySelector('.cli-producto-cant');
+            if (cantInput && !cantInput._listenerInicializado) {
+                cantInput._listenerInicializado = true;
+                cantInput.addEventListener('input', function() { recalcularTotalProductosVenta(); });
+            }
+        }
+    });
+}
+function actualizarSelectClientesVenta() {
+    var sel = document.getElementById('venta-cliente-select');
+    if (!sel) return;
+    var groups = {};
+    clientes.forEach(function(c) {
+        var key = (c.nombre + '|' + c.tel).toLowerCase();
+        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel };
+    });
+    var currentVal = sel.value;
+    sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
+    Object.keys(groups).forEach(function(key) {
+        var g = groups[key];
+        sel.innerHTML += '<option value="' + escapeHtml(key) + '">' + escapeHtml(g.nombre) + ' — ' + escapeHtml(g.tel) + '</option>';
+    });
+    if (currentVal) sel.value = currentVal;
+    sel.onchange = function() {
+        if (this.value) {
+            var parts = this.value.split('|');
+            document.getElementById('venta-nombre').value = parts[0];
+            document.getElementById('venta-telefono').value = parts[1];
+        }
+    };
 }
 function inicializarBuscadoresProducto() {
     document.querySelectorAll('.cli-producto-input').forEach(function(inp) {
@@ -216,15 +296,15 @@ function inicializarBuscadorExistente() {
     });
     input.addEventListener('focus', function() { if (this.value) Clientes.buscarExistente(this.value); });
 }
-function autoAsignarFecha() {
-    const fechaInput = document.getElementById('cli-fecha-registro');
+function autoAsignarFecha(inputId) {
+    const fechaInput = document.getElementById(inputId);
     if (fechaInput && !fechaInput.value) {
         const hoy = new Date();
         fechaInput.value = hoy.toISOString().split('T')[0];
     }
 }
-function actualizarTasaFormulario() {
-    const tasaEl = document.getElementById('tasa-valor-form');
+function actualizarTasaFormulario(elId) {
+    const tasaEl = document.getElementById(elId);
     if (!tasaEl) return;
     var modo = localStorage.getItem('modoTasa');
     var tasa = 0;
@@ -257,9 +337,32 @@ window.agregarFilaProducto = function() {
     });
 };
 
+window.agregarFilaProductoVenta = function() {
+    const container = document.getElementById('productos-container-venta');
+    const fila = document.createElement('div');
+    fila.className = 'producto-fila';
+    fila.style.marginBottom = '6px';
+    fila.innerHTML = '<div class="product-search-wrapper">'
+        + '<input type="text" class="cli-producto-input" placeholder="Buscar producto..." autocomplete="off">'
+        + '<div class="product-search-dropdown"></div>'
+        + '</div>'
+        + '<input type="number" class="cli-producto-cant" value="1" min="1" style="width:60px;height:45px;padding:6px 8px;border-radius:10px;border:1px solid var(--border-darker);font-family:inherit;font-size:0.9rem;background:#f8fafc;text-align:center;flex-shrink:0;">'
+        + '<button type="button" class="btn-remove-prod" onclick="if(this.parentElement.parentElement.children.length>1){this.parentElement.remove();recalcularTotalProductosVenta();}">✕</button>';
+    container.appendChild(fila);
+    const input = fila.querySelector('.cli-producto-input');
+    input.addEventListener('input', function() { Ventas.filtrarProductos(this); });
+    input.addEventListener('blur', function() { setTimeout(function() { Ventas.cerrarProductDropdown(input); }, 200); });
+    input.addEventListener('focus', function() { if (this.value) Ventas.filtrarProductos(this); });
+    fila.querySelector('.cli-producto-cant').addEventListener('input', function() { recalcularTotalProductosVenta(); });
+    document.querySelectorAll('#productos-container-venta .producto-fila .btn-remove-prod').forEach(function(b) {
+        b.style.display = container.children.length > 1 ? 'flex' : 'none';
+    });
+};
+
 function recalcularTotalProductos() {
     var total = 0;
-    var filas = document.querySelectorAll('.producto-fila');
+    var filas = document.querySelectorAll('#productos-container .producto-fila');
+
     filas.forEach(function(fila) {
         var inp = fila.querySelector('.cli-producto-input');
         var cant = parseInt(fila.querySelector('.cli-producto-cant')?.value || 1);
@@ -267,6 +370,22 @@ function recalcularTotalProductos() {
         if (prod) total += prod.precio * Math.max(1, cant);
     });
     var totalInput = document.getElementById('cli-total');
+    if (totalInput && total > 0) {
+        totalInput.value = total.toFixed(2);
+        totalInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+function recalcularTotalProductosVenta() {
+    var total = 0;
+    var filas = document.querySelectorAll('#productos-container-venta .producto-fila');
+    filas.forEach(function(fila) {
+        var inp = fila.querySelector('.cli-producto-input');
+        var cant = parseInt(fila.querySelector('.cli-producto-cant')?.value || 1);
+        var prod = inventario.find(function(p) { return p.nombre === inp.value.trim(); });
+        if (prod) total += prod.precio * Math.max(1, cant);
+    });
+    var totalInput = document.getElementById('venta-total');
     if (totalInput && total > 0) {
         totalInput.value = total.toFixed(2);
         totalInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -684,7 +803,8 @@ window.Clientes = {
             clientes[idx].pagadoBs = (clientes[idx].pagadoBs || 0) + bs;
             actualizarSistema();
             Clientes.cerrarAbono();
-            renderizarClientes();
+            renderizarVentas();
+            renderizarClientesSimples();
             mostrarToastNotificacion('Abono registrado para ' + g.nombre + ': $' + usd.toFixed(2) + (bs > 0 ? ' + Bs. ' + bs.toFixed(2) : ''));
         } else {
             var index = parseInt(document.getElementById('abono-modal').dataset.index);
@@ -695,7 +815,8 @@ window.Clientes = {
             c.pagadoBs = (c.pagadoBs || 0) + bs;
             actualizarSistema();
             Clientes.cerrarAbono();
-            renderizarClientes();
+            renderizarVentas();
+            renderizarClientesSimples();
             mostrarToastNotificacion('Abono registrado para ' + c.nombre + ': $' + usd.toFixed(2) + (bs > 0 ? ' + Bs. ' + bs.toFixed(2) : ''));
         }
     },
@@ -724,6 +845,146 @@ window.Clientes = {
         a.download = 'clientes-reporte.txt';
         a.click();
         mostrarToastNotificacion('Reporte descargado');
+    }
+};
+
+// VENTAS (copia de Clientes con IDs y vars independientes)
+var _ventasFilter = 'all';
+var _ventasExpanded = {};
+
+window.Ventas = {
+    filtrarProductos: function(input) {
+        var wrapper = input.closest('.product-search-wrapper');
+        if (!wrapper) return;
+        var dropdown = wrapper.querySelector('.product-search-dropdown');
+        var term = input.value.toLowerCase().trim();
+        if (!term) { dropdown.classList.remove('show'); return; }
+        var matches = inventario.filter(function(p) {
+            return p.nombre.toLowerCase().includes(term)
+                || (p.marca && p.marca.toLowerCase().includes(term))
+                || (p.categoria && p.categoria.toLowerCase().includes(term));
+        });
+        if (matches.length === 0) {
+            dropdown.innerHTML = '<div class="product-search-item no-results">Sin resultados</div>';
+            dropdown.classList.add('show');
+            return;
+        }
+        dropdown.innerHTML = matches.slice(0, 15).map(function(p) {
+            var stockLabel = p.cantidad <= 5 ? ' <span style="color:#ef4444;font-size:0.7rem;">(stock: ' + p.cantidad + ')</span>' : '';
+            return '<div class="product-search-item" data-producto="' + escapeHtml(p.nombre) + '">'
+                + '<span class="psi-nombre">' + escapeHtml(p.nombre) + '</span>'
+                + '<span><span class="psi-precio">$' + p.precio.toFixed(2) + '</span>' + stockLabel + '</span>'
+                + '</div>';
+        }).join('');
+        dropdown.classList.add('show');
+        dropdown.querySelectorAll('.product-search-item').forEach(function(item) {
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                var nombre = this.getAttribute('data-producto');
+                input.value = nombre;
+                dropdown.classList.remove('show');
+                recalcularTotalProductosVenta();
+            });
+        });
+    },
+    cerrarProductDropdown: function(input) {
+        var wrapper = input.closest('.product-search-wrapper');
+        if (wrapper) {
+            var dropdown = wrapper.querySelector('.product-search-dropdown');
+            if (dropdown) dropdown.classList.remove('show');
+        }
+    },
+    setFilter: function(filter) {
+        _ventasFilter = filter;
+        document.querySelectorAll('#ventas-filter-tabs .clientes-filter-btn').forEach(function(b) {
+            b.classList.toggle('active', b.getAttribute('data-filter') === filter);
+        });
+        renderizarVentas();
+    },
+    toggleGroup: function(gi) {
+        _ventasExpanded[gi] = !_ventasExpanded[gi];
+        renderizarVentas();
+    },
+    abrirAbono: function(index) {
+        var c = clientes[index];
+        document.getElementById('abono-modal-titulo').innerText = 'Registrar Abono';
+        var deuda = (c.total||0) - (c.pagado||0);
+        document.getElementById('abono-modal-desc').innerHTML = 'Cliente: <strong>' + escapeHtml(c.nombre) + '</strong> — Deuda actual: <strong style="color:#ef4444;">$' + Math.max(0, deuda).toFixed(2) + '</strong>';
+        document.getElementById('abono-usd').value = '';
+        document.getElementById('abono-bs').value = '';
+        document.getElementById('abono-modal').dataset.index = index;
+        document.getElementById('abono-modal').dataset.tipo = 'single';
+        document.getElementById('abono-modal').style.display = 'flex';
+        autoCalcAbono();
+    },
+    abrirAbonoGrupo: function(gi) {
+        var groups = buildVentaGroups();
+        var keys = Object.keys(groups);
+        var g = groups[keys[gi]];
+        var totalCompras = 0, totalPagado = 0;
+        g.entries.forEach(function(e) {
+            totalCompras += e.data.total || 0;
+            totalPagado += e.data.pagado || 0;
+        });
+        var deuda = totalCompras - totalPagado;
+        document.getElementById('abono-modal-titulo').innerText = 'Registrar Abono - ' + g.nombre;
+        document.getElementById('abono-modal-desc').innerHTML = 'Cliente: <strong>' + escapeHtml(g.nombre) + '</strong> — Deuda total: <strong style="color:#ef4444;">$' + Math.max(0, deuda).toFixed(2) + '</strong>';
+        document.getElementById('abono-usd').value = '';
+        document.getElementById('abono-bs').value = '';
+        document.getElementById('abono-modal').dataset.tipo = 'grupo';
+        document.getElementById('abono-modal').dataset.grupo = gi;
+        document.getElementById('abono-modal').dataset.nombre = g.nombre;
+        document.getElementById('abono-modal').style.display = 'flex';
+        autoCalcAbono();
+    },
+    cerrarAbono: function() {
+        document.getElementById('abono-modal').style.display = 'none';
+    },
+    guardarAbono: function() {
+        var usd = parseFloat(document.getElementById('abono-usd').value) || 0;
+        var bs = parseFloat(document.getElementById('abono-bs').value) || 0;
+        if (usd <= 0 && bs <= 0) { mostrarToastNotificacion('Ingrese un monto', 'error'); return; }
+        var fecha = document.getElementById('abono-fecha').value || new Date().toISOString().split('T')[0];
+        var tasa = parseFloat(document.getElementById('abono-tasa').value) || 0;
+        var abonoRecord = { fecha: fecha, tasa: tasa, usd: usd, bs: bs };
+        var tipo = document.getElementById('abono-modal').dataset.tipo;
+        if (tipo === 'grupo') {
+            var gi = parseInt(document.getElementById('abono-modal').dataset.grupo);
+            var groups = buildVentaGroups();
+            var keys = Object.keys(groups);
+            var g = groups[keys[gi]];
+            var ultimo = g.entries[g.entries.length - 1];
+            var idx = ultimo.index;
+            if (!clientes[idx].abonos) clientes[idx].abonos = [];
+            clientes[idx].abonos.push(abonoRecord);
+            clientes[idx].pagado = (clientes[idx].pagado || 0) + usd;
+            clientes[idx].pagadoBs = (clientes[idx].pagadoBs || 0) + bs;
+            actualizarSistema();
+            Ventas.cerrarAbono();
+            renderizarVentas();
+            renderizarClientesSimples();
+            mostrarToastNotificacion('Abono registrado para ' + g.nombre + ': $' + usd.toFixed(2) + (bs > 0 ? ' + Bs. ' + bs.toFixed(2) : ''));
+        } else {
+            var index = parseInt(document.getElementById('abono-modal').dataset.index);
+            var c = clientes[index];
+            if (!c.abonos) c.abonos = [];
+            c.abonos.push(abonoRecord);
+            c.pagado = (c.pagado || 0) + usd;
+            c.pagadoBs = (c.pagadoBs || 0) + bs;
+            actualizarSistema();
+            Ventas.cerrarAbono();
+            renderizarVentas();
+            renderizarClientesSimples();
+            mostrarToastNotificacion('Abono registrado para ' + c.nombre + ': $' + usd.toFixed(2) + (bs > 0 ? ' + Bs. ' + bs.toFixed(2) : ''));
+        }
+    },
+    toggleAbonoBox: function(gi) {
+        var body = document.getElementById('abono-box-' + gi);
+        var toggle = document.getElementById('abono-toggle-' + gi);
+        if (body) {
+            body.classList.toggle('abono-box-collapsed');
+            if (toggle) toggle.innerText = body.classList.contains('abono-box-collapsed') ? '▶' : '▼';
+        }
     }
 };
 
@@ -775,8 +1036,8 @@ function escapeHtml(str) {
     return d.innerHTML;
 }
 
-function previsualizarRecibos(files) {
-    var area = document.getElementById('recibo-preview-area');
+function previsualizarRecibos(files, containerId) {
+    var area = document.getElementById(containerId || 'recibo-preview-area');
     if (!area) return;
     area.innerHTML = '';
     if (!files || files.length === 0) return;
@@ -796,56 +1057,57 @@ function previsualizarRecibos(files) {
     });
 }
 
-if (document.getElementById('form-cliente')) {
-    function obtenerTasaEfectiva() {
-        var modo = localStorage.getItem('modoTasa');
-        if (modo === 'auto') {
-            return parseFloat(localStorage.getItem('tasaAuto')) || 0;
-        }
-        return parseFloat(localStorage.getItem('tasaCambio')) || 0;
+function obtenerTasaEfectiva() {
+    var modo = localStorage.getItem('modoTasa');
+    if (modo === 'auto') {
+        return parseFloat(localStorage.getItem('tasaAuto')) || 0;
     }
+    return parseFloat(localStorage.getItem('tasaCambio')) || 0;
+}
 
-    function autoCalcAbono() {
-        var fechaInput = document.getElementById('abono-fecha');
-        var tasaInput = document.getElementById('abono-tasa');
-        var usdInput = document.getElementById('abono-usd');
-        var bsInput = document.getElementById('abono-bs');
-        if (fechaInput) {
-            fechaInput.value = new Date().toISOString().split('T')[0];
-        }
-        if (tasaInput) {
-            var tasa = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
-            tasaInput.value = tasa.toFixed(2);
-        }
-        if (usdInput && bsInput) {
-            usdInput.oninput = function() {
-                var t = parseFloat(tasaInput?.value || 0);
-                if (t > 0 && this.value) {
-                    bsInput.value = (parseFloat(this.value) * t).toFixed(2);
-                } else if (!this.value) {
-                    bsInput.value = '';
-                }
-            };
-            tasaInput.oninput = function() {
-                var u = parseFloat(usdInput.value || 0);
-                var t = parseFloat(this.value || 0);
-                if (t > 0 && u > 0) {
-                    bsInput.value = (u * t).toFixed(2);
-                } else if (!this.value || !usdInput.value) {
-                    bsInput.value = '';
-                }
-            };
-        }
+function autoCalcAbono() {
+    var fechaInput = document.getElementById('abono-fecha');
+    var tasaInput = document.getElementById('abono-tasa');
+    var usdInput = document.getElementById('abono-usd');
+    var bsInput = document.getElementById('abono-bs');
+    if (fechaInput) {
+        fechaInput.value = new Date().toISOString().split('T')[0];
     }
-
-    function autoCalcBs(srcId, dstId) {
-        document.getElementById(srcId)?.addEventListener('input', function() {
-            var tasa = obtenerTasaEfectiva();
-            if (tasa > 0 && this.value) {
-                document.getElementById(dstId).value = (parseFloat(this.value) * tasa).toFixed(2);
+    if (tasaInput) {
+        var tasa = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
+        tasaInput.value = tasa.toFixed(2);
+    }
+    if (usdInput && bsInput) {
+        usdInput.oninput = function() {
+            var t = parseFloat(tasaInput?.value || 0);
+            if (t > 0 && this.value) {
+                bsInput.value = (parseFloat(this.value) * t).toFixed(2);
+            } else if (!this.value) {
+                bsInput.value = '';
             }
-        });
+        };
+        tasaInput.oninput = function() {
+            var u = parseFloat(usdInput.value || 0);
+            var t = parseFloat(this.value || 0);
+            if (t > 0 && u > 0) {
+                bsInput.value = (u * t).toFixed(2);
+            } else if (!this.value || !usdInput.value) {
+                bsInput.value = '';
+            }
+        };
     }
+}
+
+function autoCalcBs(srcId, dstId) {
+    document.getElementById(srcId)?.addEventListener('input', function() {
+        var tasa = obtenerTasaEfectiva();
+        if (tasa > 0 && this.value) {
+            document.getElementById(dstId).value = (parseFloat(this.value) * tasa).toFixed(2);
+        }
+    });
+}
+
+if (document.getElementById('form-cliente')) {
     autoCalcBs('cli-total', 'cli-total-bs');
     autoCalcBs('cli-pagado', 'cli-pagado-bs');
 
@@ -902,8 +1164,8 @@ if (document.getElementById('form-cliente')) {
                 recibo: listaRecibosB64
             });
             actualizarSistema();
-            window._expandirGrupoCliente = (nombreCli + '|' + document.getElementById('cli-telefono').value).toLowerCase();
-            renderizarClientes();
+            window._expandirGrupoVenta = (nombreCli + '|' + document.getElementById('cli-telefono').value).toLowerCase();
+            renderizarVentas();
         } catch (err) {
             console.error('Error al registrar venta:', err);
             mostrarToastNotificacion('Error: ' + err.message, 'error');
@@ -921,6 +1183,113 @@ if (document.getElementById('form-cliente')) {
     });
 }
 
+// FORMULARIO REGISTRAR CLIENTE SIMPLE
+if (document.getElementById('form-cliente-simple')) {
+    document.getElementById('form-cliente-simple').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var nombre = document.getElementById('cli-nombre-simple').value.trim();
+        var tel = document.getElementById('cli-telefono-simple').value.trim();
+        if (!nombre || !tel) { mostrarToastNotificacion('Complete nombre y teléfono', 'error'); return; }
+        var existe = clientes.some(function(c) { return c.nombre === nombre && c.tel === tel; });
+        if (existe) { mostrarToastNotificacion('Cliente ya registrado', 'error'); return; }
+        clientes.push({
+            fechaRegistro: new Date().toISOString().split('T')[0],
+            nombre: nombre,
+            tel: tel,
+            productos: [],
+            cantidades: [],
+            total: 0,
+            totalBs: 0,
+            pagado: 0,
+            pagadoBs: 0,
+            fotoProducto: [],
+            recibo: []
+        });
+        actualizarSistema();
+        renderizarClientesSimples();
+        e.target.reset();
+        toggleFormulario('form-container-cliente');
+        mostrarToastNotificacion('Cliente registrado: ' + nombre);
+    });
+}
+
+// FORMULARIO REGISTRAR VENTA
+if (document.getElementById('form-venta')) {
+    autoCalcBs('venta-total', 'venta-total-bs');
+    autoCalcBs('venta-pagado', 'venta-pagado-bs');
+
+    document.getElementById('form-venta').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        let nombreCli = '';
+        try {
+            const filesRecibos = document.getElementById('venta-recibo').files;
+            let listaRecibosB64 = [];
+            for(let i=0; i<filesRecibos.length; i++) {
+                const b64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error('Error al leer archivo'));
+                    reader.readAsDataURL(filesRecibos[i]);
+                });
+                listaRecibosB64.push(b64);
+            }
+            nombreCli = document.getElementById('venta-nombre').value;
+            const productoInputs = document.querySelectorAll('#productos-container-venta .cli-producto-input');
+            const productos = [];
+            const cantidades = [];
+            const fotosAutodetectadas = [];
+            const fotosSet = new Set();
+            productoInputs.forEach(function(inp) {
+                var val = inp.value.trim();
+                if (val) {
+                    productos.push(val);
+                    var fila = inp.closest('.producto-fila');
+                    var cant = parseInt(fila.querySelector('.cli-producto-cant')?.value || 1);
+                    cantidades.push(cant);
+                    var prod = inventario.find(function(p) { return p.nombre === val; });
+                    if (prod && prod.fotos && prod.fotos.length > 0) {
+                        var primeraFoto = prod.fotos[0];
+                        if (!fotosSet.has(primeraFoto)) {
+                            fotosSet.add(primeraFoto);
+                            fotosAutodetectadas.push(primeraFoto);
+                        }
+                    }
+                }
+            });
+
+            clientes.push({
+                fechaRegistro: document.getElementById('venta-fecha-registro').value,
+                nombre: nombreCli,
+                tel: document.getElementById('venta-telefono').value,
+                productos: productos,
+                cantidades: cantidades,
+                total: parseFloat(document.getElementById('venta-total').value || 0),
+                totalBs: parseFloat(document.getElementById('venta-total-bs').value || 0),
+                pagado: parseFloat(document.getElementById('venta-pagado').value || 0),
+                pagadoBs: parseFloat(document.getElementById('venta-pagado-bs').value || 0),
+                fotoProducto: fotosAutodetectadas,
+                recibo: listaRecibosB64
+            });
+            actualizarSistema();
+            window._expandirGrupoVenta = (nombreCli + '|' + document.getElementById('venta-telefono').value).toLowerCase();
+            renderizarVentas();
+            renderizarClientesSimples();
+        } catch (err) {
+            console.error('Error al registrar venta:', err);
+            mostrarToastNotificacion('Error: ' + err.message, 'error');
+        }
+        e.target.reset();
+        var numFotos = document.getElementById('num-fotos-venta');
+        if (numFotos) numFotos.innerText = "Ninguno";
+        document.getElementById('recibo-preview-area-venta').innerHTML = '';
+        document.getElementById('venta-cliente-select').value = '';
+        toggleFormulario('form-container-venta');
+        if (nombreCli) {
+            mostrarToastNotificacion('✅ Venta registrada para ' + nombreCli);
+        }
+    });
+}
+
 function buildClientGroups() {
     var terminoBusqueda = (document.getElementById('buscar-cliente')?.value.toLowerCase() || '').trim();
     var groups = {};
@@ -934,6 +1303,26 @@ function buildClientGroups() {
         var sd = getStatusData(c);
         if (_clientesFilter === 'paid' && sd.status !== 'pagado') return;
         if (_clientesFilter === 'debt' && sd.status === 'pagado') return;
+        var key = (c.nombre + '|' + c.tel).toLowerCase();
+        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, entries: [] };
+        groups[key].entries.push({ index: i, data: c });
+    });
+    return groups;
+}
+
+function buildVentaGroups() {
+    var terminoBusqueda = (document.getElementById('buscar-venta')?.value.toLowerCase() || '').trim();
+    var groups = {};
+    clientes.forEach(function(c, i) {
+        if (terminoBusqueda) {
+            var matchName = c.nombre.toLowerCase().includes(terminoBusqueda);
+            var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : []);
+            var matchProd = prods.some(function(p) { return p.toLowerCase().includes(terminoBusqueda); });
+            if (!matchName && !matchProd) return;
+        }
+        var sd = getStatusData(c);
+        if (_ventasFilter === 'paid' && sd.status !== 'pagado') return;
+        if (_ventasFilter === 'debt' && sd.status === 'pagado') return;
         var key = (c.nombre + '|' + c.tel).toLowerCase();
         if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, entries: [] };
         groups[key].entries.push({ index: i, data: c });
@@ -1107,8 +1496,209 @@ function renderizarClientes() {
     window._expandirGrupoCliente = null;
 }
 
+function renderizarVentas() {
+    const container = document.getElementById('ventas-table-container');
+    if (!container) return;
+    var groups = buildVentaGroups();
+    var groupKeys = Object.keys(groups);
+
+    if (groupKeys.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">No se encontraron ventas.</div>';
+        return;
+    }
+
+    var html = '<div class="clientes-cards">';
+
+    groupKeys.forEach(function(key, gi) {
+        var g = groups[key];
+        var totalCompras = 0;
+        var totalPagado = 0;
+        g.entries.forEach(function(e) {
+            totalCompras += e.data.total || 0;
+            totalPagado += e.data.pagado || 0;
+        });
+        var sd = getStatusData({ total: totalCompras, pagado: totalPagado });
+        var expanded = _ventasExpanded[gi] || false;
+        if (!expanded && window._expandirGrupoVenta && key === window._expandirGrupoVenta) {
+            expanded = true;
+            _ventasExpanded[gi] = true;
+        }
+
+        var statusLabel = sd.status === 'pagado' ? '✅ Pagado' : sd.status === 'parcial' ? '⚠️ Parcial' : '❌ Deuda';
+        var statusClass = sd.status === 'pagado' ? 'pagado' : sd.status === 'parcial' ? 'deuda-parcial' : 'deuda-total';
+
+        html += '<div class="cliente-card">';
+        html += '<div class="cliente-card-header">';
+        html += '<div class="cliente-card-toggle' + (expanded ? ' open' : '') + '" onclick="Ventas.toggleGroup(' + gi + ')">▶</div>';
+        html += '<div class="cliente-card-info" onclick="Ventas.toggleGroup(' + gi + ')">';
+        html += '<div class="cliente-card-name">' + escapeHtml(g.nombre) + '</div>';
+        html += '<div class="cliente-card-contact">📞 ' + escapeHtml(g.tel) + ' · ' + g.entries.length + ' compra' + (g.entries.length !== 1 ? 's' : '') + '</div>';
+        html += '</div>';
+        html += '<div class="cliente-card-progress">';
+        html += renderProgressBar(sd);
+        html += '</div>';
+        html += '<div class="cliente-card-actions">';
+        html += '<button onclick="Ventas.abrirAbonoGrupo(' + gi + ')" class="btn-edit-action" style="background:#dbeafe;color:#1e40af;" title="Registrar abono">💰 Abono</button>';
+        html += '</div>';
+        html += '</div>';
+
+        if (expanded) {
+            html += '<div class="cliente-card-body">';
+
+            // Abono box (collapsible)
+            var abonosExisten = false;
+            g.entries.forEach(function(e) {
+                if (e.data.abonos && e.data.abonos.length > 0) abonosExisten = true;
+            });
+            if (abonosExisten || totalCompras > 0) {
+                var abonoBoxId = 'abono-box-' + gi;
+                html += '<div class="abono-box">';
+                html += '<div class="abono-box-title" onclick="Ventas.toggleAbonoBox(' + gi + ')" style="cursor:pointer;">💰 Resumen de Pagos <span style="margin-left:auto;font-size:0.7rem;color:#94a3b8;" id="abono-toggle-' + gi + '">▼</span></div>';
+                html += '<div class="abono-box-body" id="' + abonoBoxId + '">';
+                html += '<div class="abono-box-grid">';
+                html += '<div class="abono-box-item"><span class="abi-label">Total</span><span class="abi-value">$' + totalCompras.toFixed(2) + '</span></div>';
+                html += '<div class="abono-box-item"><span class="abi-label">Pagado</span><span class="abi-value paid">$' + totalPagado.toFixed(2) + '</span></div>';
+                html += '<div class="abono-box-item"><span class="abi-label">Deuda</span><span class="abi-value debt">$' + sd.deuda.toFixed(2) + '</span></div>';
+                var tasa_ = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
+                html += '<div class="abono-box-item"><span class="abi-label">Tasa del día</span><span class="abi-value">Bs. ' + tasa_.toFixed(2) + '</span></div>';
+                html += '</div>';
+
+                var allAbonos = [];
+                g.entries.forEach(function(e) {
+                    if (e.data.abonos) {
+                        e.data.abonos.forEach(function(a) {
+                            allAbonos.push({ fecha: a.fecha, usd: a.usd, bs: a.bs, tasa: a.tasa });
+                        });
+                    }
+                });
+                if (allAbonos.length > 0) {
+                    allAbonos.sort(function(a, b) { return a.fecha < b.fecha ? 1 : -1; });
+                    html += '<div class="abonos-historial">';
+                    html += '<div class="abonos-historial-title">Historial de pagos</div>';
+                    allAbonos.forEach(function(a) {
+                        html += '<div class="abono-entry">';
+                        html += '<span class="ae-fecha">' + (a.fecha || '—') + '</span>';
+                        html += '<span class="ae-usd">$' + (a.usd || 0).toFixed(2) + '</span>';
+                        html += '<span class="ae-bs">Bs. ' + (a.bs || 0).toFixed(2) + '</span>';
+                        html += '<span class="ae-tasa">@ ' + (a.tasa || 0).toFixed(2) + '</span>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                html += '</div>'; // abono-box-body
+                html += '</div>'; // abono-box
+            }
+
+            html += '<table class="modern-table"><thead><tr>'
+                + '<th style="width:30px;"></th>'
+                + '<th>Fecha</th>'
+                + '<th>Producto + Foto</th>'
+                + '<th>Monto</th>'
+                + '<th>Recibos</th>'
+                + '<th style="text-align:center;width:60px;">Editar</th>'
+                + '</tr></thead><tbody>';
+
+            g.entries.forEach(function(e) {
+                var i = e.index;
+                var c = e.data;
+                var s = getStatusData(c);
+                var fotosProd = c.fotoProducto ? (Array.isArray(c.fotoProducto) ? c.fotoProducto : [c.fotoProducto]) : [];
+                var fotosRecibos = c.recibo ? (Array.isArray(c.recibo) ? c.recibo : [c.recibo]) : [];
+
+                var tasa = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
+                var totalBs = c.totalBs || (tasa > 0 ? (c.total || 0) * tasa : 0);
+
+                var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : ['—']);
+                var cantidades = c.cantidades || [];
+                var productoHtml = prods.map(function(p, idx) {
+                    var qty = cantidades[idx] || 1;
+                    var prodInv = inventario.find(function(ip) { return ip.nombre === p; });
+                    var fotoUrl = prodInv && prodInv.fotos && prodInv.fotos.length > 0 ? prodInv.fotos[0] : null;
+                    var fotoImg = fotoUrl ? '<img src="' + fotoUrl + '" class="cli-prod-thumb" alt="">' : '<div class="cli-prod-thumb cli-prod-thumb-placeholder">' + (p ? p.charAt(0).toUpperCase() : '—') + '</div>';
+                    return '<div class="cli-prod-cell" onclick="mostrarInfoProducto(\'' + escapeHtml(p) + '\')">' + fotoImg + '<span class="cli-prod-name">' + escapeHtml(p) + (qty > 1 ? ' <strong>x' + qty + '</strong>' : '') + '</span></div>';
+                }).join('');
+
+                var montoHtml = '<div style="white-space:nowrap;"><strong style="color:#1e293b;">$' + (c.total||0).toFixed(2) + '</strong>'
+                    + '<br><span style="color:#64748b;font-size:0.85rem;">Bs. ' + totalBs.toFixed(2) + '</span></div>';
+
+                var reciboRender = fotosRecibos.length > 0
+                    ? '<div class="mini-fotos-stack" onclick="abrirManagerRecibos(' + i + ')">' + fotosRecibos.slice(0, 2).map(function(img){return '<img src="' + img + '" class="img-preview-recibo">';}).join('') + (fotosRecibos.length > 2 ? '<span class="badge-mas-fotos">+' + (fotosRecibos.length-2) + '</span>' : '') + '</div>'
+                    : '<button class="btn-edit-action" onclick="abrirManagerRecibos(' + i + ')" style="font-size:0.75rem;">➕ Subir</button>';
+
+                var rowClass = s.status === 'pagado' ? 'tr-pagado' : s.status === 'deuda' ? 'tr-deuda' : 'tr-parcial';
+                html += '<tr class="' + rowClass + '">'
+                    + '<td></td>'
+                    + '<td><span style="font-size:0.85rem;color:#64748b;">' + (c.fechaRegistro||'—') + '</span></td>'
+                    + '<td>' + productoHtml + '</td>'
+                    + '<td>' + montoHtml + '</td>'
+                    + '<td>' + reciboRender + '</td>'
+                    + '<td style="text-align:center;"><button onclick="activarEdicionCliente(' + i + ')" class="btn-edit-action" style="padding:4px 10px;font-size:0.8rem;" title="Editar">✏️</button></td>'
+                    + '</tr>';
+
+                var abonos = c.abonos || [];
+                var statusColor = s.status === 'pagado' ? '#16a34a' : s.status === 'parcial' ? '#d97706' : '#ef4444';
+                var statusLabel = s.status === 'pagado' ? '✅ Pagado' : s.status === 'parcial' ? '⚠️ Parcial' : '❌ Deuda';
+
+                html += '<tr class="cli-pago-summary-row"><td colspan="6"><div class="cli-pago-summary">'
+                    + '<div class="cli-pago-bar">'
+                    + '<span class="cli-pago-badge" style="background:' + statusColor + ';">' + statusLabel + '</span>'
+                    + '<span class="cli-pago-amount"><strong>Total:</strong> $' + (c.total||0).toFixed(2) + '</span>'
+                    + '<span class="cli-pago-amount"><strong>Pagado:</strong> $' + (c.pagado||0).toFixed(2) + '</span>'
+                    + '<span class="cli-pago-amount"><strong>Deuda:</strong> $' + s.deuda.toFixed(2) + '</span>'
+                    + '<button class="btn-edit-action" onclick="Ventas.abrirAbono(' + i + ')" style="padding:4px 10px;font-size:0.8rem;background:#dbeafe;color:#1e40af;">💰 Abono</button>'
+                    + '</div>'
+                    + (abonos.length > 0 ? '<div class="cli-pago-abonos">' + abonos.map(function(a) { return '<span class="cli-pago-abono-entry">' + (a.fecha||'—') + ' · $' + (a.usd||0).toFixed(2) + (a.bs > 0 ? ' + Bs. ' + a.bs.toFixed(2) : '') + (a.tasa > 0 ? ' @ ' + a.tasa.toFixed(2) : '') + '</span>'; }).join('') + '</div>' : '')
+                    + '</div></td></tr>';
+            });
+
+            html += '</tbody></table>';
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+    window._expandirGrupoVenta = null;
+}
+
+function renderizarClientesSimples() {
+    const tbody = document.getElementById('tabla-clientes-simples');
+    if (!tbody) return;
+    var terminoBusqueda = (document.getElementById('buscar-cliente-simple')?.value.toLowerCase() || '').trim();
+    var groups = {};
+    clientes.forEach(function(c, i) {
+        if (terminoBusqueda && !c.nombre.toLowerCase().includes(terminoBusqueda)) return;
+        var key = (c.nombre + '|' + c.tel).toLowerCase();
+        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, compras: 0, total: 0 };
+        groups[key].compras++;
+        groups[key].total += c.total || 0;
+    });
+    var keys = Object.keys(groups);
+    if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#94a3b8;">No se encontraron clientes.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = keys.map(function(key) {
+        var g = groups[key];
+        return '<tr>'
+            + '<td><strong>' + escapeHtml(g.nombre) + '</strong></td>'
+            + '<td>📞 ' + escapeHtml(g.tel) + '</td>'
+            + '<td>' + g.compras + ' compra' + (g.compras !== 1 ? 's' : '') + '</td>'
+            + '<td><strong>$' + g.total.toFixed(2) + '</strong></td>'
+            + '<td style="text-align:center;"><button class="btn-edit-action" onclick="cambiarAVentas(\'' + escapeHtml(key) + '\')" style="font-size:0.75rem;">💰 Ver ventas</button></td>'
+            + '</tr>';
+    }).join('');
+}
+
+window.cambiarAVentas = function(key) {
+    window._expandirGrupoVenta = key;
+    document.getElementById('buscar-venta').value = '';
+    mostrarSeccion('sec-ventas');
+};
+
 function activarEdicionCliente(index) { abrirModalEdicionCliente(index); }
-function cancelarEdicionCliente() { clienteEditandoIndex = null; renderizarClientes(); }
+function cancelarEdicionCliente() { clienteEditandoIndex = null; renderizarClientes(); if (document.getElementById('sec-ventas').classList.contains('active')) renderizarVentas(); renderizarClientesSimples(); }
 
 var editModalClienteIndex = null;
 var editModalProdContador = 0;
@@ -1141,7 +1731,8 @@ window.abrirModalEdicionCliente = function(index) {
 window.cerrarModalEdicionCliente = function() {
     document.getElementById('editar-cliente-modal').style.display = 'none';
     editModalClienteIndex = null;
-    renderizarClientes();
+    renderizarVentas();
+    renderizarClientesSimples();
 };
 
 window.agregarFilaProductoEdicionModal = function(valor, cantidad) {
@@ -1462,7 +2053,8 @@ function abrirManagerRecibos(clienteIndex) {
 }
 function cerrarManagerRecibos() {
     document.getElementById('recibos-manager-modal').style.display = 'none';
-    renderizarClientes(); 
+    renderizarVentas();
+    renderizarClientesSimples();
 }
 function recibosRefrescarModal() {
     const listaContenedor = document.getElementById('recibos-lista-miniaturas');
@@ -1554,7 +2146,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cli-recibo')?.addEventListener('change', (e) => {
         const i = document.getElementById('num-fotos');
         if(i) { i.innerText = e.target.files.length > 0 ? `✔️ ${e.target.files.length} cargada(s)` : "Ninguno"; i.style.color = "var(--success)"; }
-        previsualizarRecibos(e.target.files);
+        previsualizarRecibos(e.target.files, 'recibo-preview-area');
+    });
+    document.getElementById('venta-recibo')?.addEventListener('change', (e) => {
+        const i = document.getElementById('num-fotos-venta');
+        if(i) { i.innerText = e.target.files.length > 0 ? `✔️ ${e.target.files.length} cargada(s)` : "Ninguno"; i.style.color = "var(--success)"; }
+        previsualizarRecibos(e.target.files, 'recibo-preview-area-venta');
     });
     document.getElementById('prod-foto')?.addEventListener('change', (e) => {
         const i = document.getElementById('num-fotos-prod');

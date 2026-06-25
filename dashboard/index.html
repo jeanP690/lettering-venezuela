@@ -23,6 +23,7 @@
             <nav class="menu">
                 <button class="menu-item active" onclick="mostrarSeccion('sec-dashboard')">📊 Dashboard</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-clientes')">👥 Clientes</button>
+                <button class="menu-item" onclick="mostrarSeccion('sec-ventas')">💰 Ventas</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-productos')">📦 Productos</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-pedidos')">🛒 Pedidos</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-usuarios')">👤 Usuarios</button>
@@ -113,51 +114,98 @@
 
             <section id="sec-clientes" class="tab-content">
                 <div class="title-container">
-                    <h1>Gestión de Clientes y Cuentas por Cobrar</h1>
+                    <h1>Gestión de Clientes</h1>
                 </div>
-
                 <div class="action-buttons-bar">
                     <button class="btn-toggle-form" onclick="toggleFormulario('form-container-cliente')">➕ Registrar Nuevo Cliente</button>
                 </div>
-
                 <div id="form-container-cliente" class="form-horizontal-container collapsible-form">
+                    <div class="form-header-row">
+                        <h2>Registrar Cliente</h2>
+                    </div>
+                    <form id="form-cliente-simple" class="form-grid-dos-columnas" style="max-width:500px;">
+                        <div class="form-group">
+                            <label for="cli-nombre-simple">Nombre *</label>
+                            <input type="text" id="cli-nombre-simple" placeholder="Ej. María Pérez" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cli-telefono-simple">Teléfono *</label>
+                            <input type="tel" id="cli-telefono-simple" placeholder="Ej. 04121234567" required>
+                        </div>
+                        <div class="form-group span-completo" style="display:flex;gap:8px;flex-direction:row;">
+                            <button type="submit" class="btn-primary" style="flex:1;padding:14px;border-radius:10px;font-weight:700;font-size:1rem;">Registrar Cliente</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-container-flex" style="margin-top: 15px;">
+                    <div class="clientes-filter-bar">
+                        <div class="search-container" style="margin:0; flex:1; max-width:400px;">
+                            <input type="text" id="buscar-cliente-simple" placeholder="🔍 Buscar cliente..." oninput="renderizarClientesSimples()">
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Teléfono</th>
+                                    <th>Compras</th>
+                                    <th>Total Gastado</th>
+                                    <th style="text-align:center;width:100px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-clientes-simples"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-ventas" class="tab-content">
+                <div class="title-container">
+                    <h1>Gestión de Ventas</h1>
+                </div>
+                <div class="action-buttons-bar">
+                    <button class="btn-toggle-form" onclick="toggleFormulario('form-container-venta')">➕ Registrar Nueva Venta</button>
+                </div>
+                <div id="form-container-venta" class="form-horizontal-container collapsible-form">
                     <div class="form-header-row">
                         <h2>Registrar Venta</h2>
                         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                            <div class="tasa-card" id="tasa-card-form">
+                            <div class="tasa-card" id="tasa-card-form-venta">
                                 <span class="tasa-label">💵 Tasa del día</span>
-                                <span class="tasa-valor" id="tasa-valor-form">—</span>
+                                <span class="tasa-valor" id="tasa-valor-form-venta">—</span>
                             </div>
-                            <button type="button" class="btn-cancel" onclick="limpiarFormularioCliente()" style="padding:10px 18px;border-radius:12px;font-weight:700;font-size:0.9rem;white-space:nowrap;min-width:140px;display:flex;align-items:center;justify-content:center;gap:6px;">🗑️ Limpiar</button>
+                            <button type="button" class="btn-cancel" onclick="limpiarFormularioVenta()" style="padding:10px 18px;border-radius:12px;font-weight:700;font-size:0.9rem;white-space:nowrap;min-width:140px;display:flex;align-items:center;justify-content:center;gap:6px;">🗑️ Limpiar</button>
                         </div>
                     </div>
 
-                    <div class="form-group existente-group">
-                        <label for="cli-buscar-existente">🔍 Cliente ya registrado (seleccionar para agilizar)</label>
-                        <input type="text" id="cli-buscar-existente" class="existentes-input" placeholder="Escriba nombre o teléfono..." autocomplete="off">
-                        <div id="cli-resultados-existentes" class="existentes-dropdown"></div>
+                    <div class="form-group" style="margin-bottom:16px;">
+                        <label for="venta-cliente-select">🧑 Cliente *</label>
+                        <select id="venta-cliente-select" required style="padding:12px 16px;border-radius:10px;border:1px solid var(--border-darker);font-family:inherit;font-size:0.95rem;background:#f8fafc;height:45px;width:100%;">
+                            <option value="">Seleccionar cliente...</option>
+                        </select>
                     </div>
 
-                    <form id="form-cliente" class="form-grid-dos-columnas">
+                    <form id="form-venta" class="form-grid-dos-columnas">
                         <div class="form-group span-completo">
                             <div class="form-row-tres">
                                 <div class="form-group" style="gap:4px;">
-                                    <label for="cli-fecha-registro">Fecha Venta *</label>
-                                    <input type="date" id="cli-fecha-registro" required>
+                                    <label for="venta-fecha-registro">Fecha Venta *</label>
+                                    <input type="date" id="venta-fecha-registro" required>
                                 </div>
                                 <div class="form-group" style="gap:4px;">
-                                    <label for="cli-nombre">Nombre Cliente *</label>
-                                    <input type="text" id="cli-nombre" placeholder="Ej. María Pérez" required>
+                                    <label for="venta-nombre">Nombre Cliente *</label>
+                                    <input type="text" id="venta-nombre" placeholder="Ej. María Pérez" required>
                                 </div>
                                 <div class="form-group" style="gap:4px;">
-                                    <label for="cli-telefono">Teléfono *</label>
-                                    <input type="tel" id="cli-telefono" placeholder="Ej. 04121234567" required>
+                                    <label for="venta-telefono">Teléfono *</label>
+                                    <input type="tel" id="venta-telefono" placeholder="Ej. 04121234567" required>
                                 </div>
                             </div>
                         </div>
                         <div class="form-group span-completo">
                             <label>Productos *</label>
-                            <div id="productos-container">
+                            <div id="productos-container-venta">
                                 <div class="producto-fila">
                                     <div class="product-search-wrapper">
                                         <input type="text" class="cli-producto-input" placeholder="Buscar producto..." autocomplete="off">
@@ -167,48 +215,48 @@
                                     <button type="button" class="btn-remove-prod" onclick="this.parentElement.remove()" style="display:none;">✕</button>
                                 </div>
                             </div>
-                            <button type="button" id="btn-agregar-producto" class="btn-add-prod" onclick="agregarFilaProducto()">+ Agregar otro producto</button>
+                            <button type="button" class="btn-add-prod" onclick="agregarFilaProductoVenta()">+ Agregar otro producto</button>
                         </div>
                         <div class="form-group">
-                            <label for="cli-total">Total ($) *</label>
-                            <input type="number" id="cli-total" step="0.01" min="0" placeholder="0.00" required>
+                            <label for="venta-total">Total ($) *</label>
+                            <input type="number" id="venta-total" step="0.01" min="0" placeholder="0.00" required>
                         </div>
                         <div class="form-group">
-                            <label for="cli-total-bs">Total (Bs.)</label>
-                            <input type="number" id="cli-total-bs" step="0.01" min="0" placeholder="0.00">
+                            <label for="venta-total-bs">Total (Bs.)</label>
+                            <input type="number" id="venta-total-bs" step="0.01" min="0" placeholder="0.00">
                         </div>
                         <div class="form-group">
-                            <label for="cli-pagado">Pagado ($) *</label>
-                            <input type="number" id="cli-pagado" step="0.01" min="0" placeholder="0.00" required>
+                            <label for="venta-pagado">Pagado ($) *</label>
+                            <input type="number" id="venta-pagado" step="0.01" min="0" placeholder="0.00" required>
                         </div>
                         <div class="form-group">
-                            <label for="cli-pagado-bs">Pagado (Bs.)</label>
-                            <input type="number" id="cli-pagado-bs" step="0.01" min="0" placeholder="0.00">
+                            <label for="venta-pagado-bs">Pagado (Bs.)</label>
+                            <input type="number" id="venta-pagado-bs" step="0.01" min="0" placeholder="0.00">
                         </div>
                         <div class="form-group span-completo">
                             <label>Recibo</label>
-                            <label for="cli-recibo" class="file-upload-btn-recibo">📁 Adjuntar Recibo</label>
-                            <input type="file" id="cli-recibo" accept="image/*" multiple style="display: none;">
-                            <div id="recibo-preview-area" class="recibo-preview-grid" style="margin-top:8px;"></div>
+                            <label for="venta-recibo" class="file-upload-btn-recibo">📁 Adjuntar Recibo</label>
+                            <input type="file" id="venta-recibo" accept="image/*" multiple style="display: none;">
+                            <div id="recibo-preview-area-venta" class="recibo-preview-grid" style="margin-top:8px;"></div>
                         </div>
                         <div class="form-group span-completo" style="display:flex;gap:8px;flex-direction:row;">
-                            <button type="submit" class="btn-primary" style="flex:1;padding:14px;border-radius:10px;font-weight:700;font-size:1rem;">Registrar Cliente</button>
+                            <button type="submit" class="btn-primary" style="flex:1;padding:14px;border-radius:10px;font-weight:700;font-size:1rem;">Registrar Venta</button>
                         </div>
                     </form>
                 </div>
 
                 <div class="table-container-flex" style="margin-top: 15px;">
                     <div class="clientes-filter-bar">
-                        <div class="clientes-filter-tabs" id="clientes-filter-tabs">
-                            <button class="clientes-filter-btn active" data-filter="all" onclick="Clientes.setFilter('all')">📋 Todos</button>
-                            <button class="clientes-filter-btn" data-filter="debt" onclick="Clientes.setFilter('debt')">⚠️ Con deuda</button>
-                            <button class="clientes-filter-btn" data-filter="paid" onclick="Clientes.setFilter('paid')">✅ Pagados</button>
+                        <div class="clientes-filter-tabs" id="ventas-filter-tabs">
+                            <button class="clientes-filter-btn active" data-filter="all" onclick="Ventas.setFilter('all')">📋 Todas</button>
+                            <button class="clientes-filter-btn" data-filter="debt" onclick="Ventas.setFilter('debt')">⚠️ Con deuda</button>
+                            <button class="clientes-filter-btn" data-filter="paid" onclick="Ventas.setFilter('paid')">✅ Pagadas</button>
                         </div>
                         <div class="search-container" style="margin:0; flex:1; max-width:400px;">
-                            <input type="text" id="buscar-cliente" placeholder="🔍 Buscar cliente..." oninput="renderizarClientes()">
+                            <input type="text" id="buscar-venta" placeholder="🔍 Buscar venta..." oninput="renderizarVentas()">
                         </div>
                     </div>
-                    <div id="clientes-table-container"></div>
+                    <div id="ventas-table-container"></div>
                 </div>
             </section>
 
