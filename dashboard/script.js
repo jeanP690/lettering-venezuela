@@ -111,7 +111,6 @@ function mostrarSeccion(id, subSeccionPorDefecto = 'categorias') {
     if(id === 'sec-clientes') { 
         clienteEditandoIndex = null; 
         renderizarClientesSimples(); 
-        if (typeof window.renderizarUsuarios === 'function') window.renderizarUsuarios(); 
     }
     if(id === 'sec-ventas') { 
         clienteEditandoIndex = null; 
@@ -1665,40 +1664,156 @@ function renderizarVentas() {
     window._expandirGrupoVenta = null;
 }
 
+var _clientesEditandoKey = null;
+
 function renderizarClientesSimples() {
     const tbody = document.getElementById('tabla-clientes-simples');
     if (!tbody) return;
+
+    var usuariosWeb = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
     var terminoBusqueda = (document.getElementById('buscar-cliente-simple')?.value.toLowerCase() || '').trim();
     var groups = {};
-    clientes.forEach(function(c, i) {
-        if (terminoBusqueda && !c.nombre.toLowerCase().includes(terminoBusqueda) && !(c.email || '').toLowerCase().includes(terminoBusqueda)) return;
+
+    // Agrupar desde clientes[] (ventas)
+    clientes.forEach(function(c) {
+        if (terminoBusqueda && !c.nombre.toLowerCase().includes(terminoBusqueda)) return;
         var key = (c.nombre + '|' + c.tel).toLowerCase();
-        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, email: c.email || '', compras: 0, total: 0 };
+        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, email: '', compras: 0, total: 0 };
         groups[key].compras++;
         groups[key].total += c.total || 0;
     });
+
+    // Enriquecer con email de usuarios web
+    var webEmailMap = {};
+    usuariosWeb.forEach(function(u) {
+        var key = (u.nombre + '|' + u.tel).toLowerCase();
+        webEmailMap[key] = u.email || '';
+    });
+    Object.keys(groups).forEach(function(key) {
+        if (webEmailMap[key]) groups[key].email = webEmailMap[key];
+    });
+
+    // Agregar usuarios web sin ventas
+    usuariosWeb.forEach(function(u) {
+        var key = (u.nombre + '|' + u.tel).toLowerCase();
+        if (!groups[key]) {
+            if (terminoBusqueda && !u.nombre.toLowerCase().includes(terminoBusqueda)) return;
+            groups[key] = { nombre: u.nombre, tel: u.tel, email: u.email || '', compras: 0, total: 0 };
+        }
+    });
+
     var keys = Object.keys(groups);
     if (keys.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#94a3b8;">No se encontraron clientes.</td></tr>';
         return;
     }
+
     tbody.innerHTML = keys.map(function(key) {
         var g = groups[key];
-        return '<tr>'
+        var editing = (_clientesEditandoKey === key);
+        var editNombre = escapeHtml(g.nombre);
+        var editTel = escapeHtml(g.tel);
+        var editEmail = escapeHtml(g.email);
+
+        if (editing) {
+            return '<tr class="editing-row" data-key="' + escapeHtml(key) + '">'
+                + '<td><input type="text" id="cli-edit-nombre" value="' + editNombre + '" class="table-input-compact" style="width:140px;" placeholder="Nombre"></td>'
+                + '<td><input type="tel" id="cli-edit-tel" value="' + editTel + '" class="table-input-compact" style="width:130px;" placeholder="Teléfono"></td>'
+                + '<td><input type="email" id="cli-edit-email" value="' + editEmail + '" class="table-input-compact" style="width:160px;" placeholder="Correo"></td>'
+                + '<td>' + g.compras + '</td>'
+                + '<td><strong>$' + g.total.toFixed(2) + '</strong></td>'
+                + '<td class="table-actions-cell" style="justify-content:center;gap:4px;">'
+                + '<button onclick="guardarClienteEditado(\'' + escapeHtml(key) + '\')" class="btn-save" style="padding:4px 8px;font-size:0.75rem;" title="Guardar">💾</button>'
+                + '<button onclick="cancelarEdicionClienteSimple()" class="btn-cancel" style="padding:4px 8px;font-size:0.75rem;" title="Cancelar">❌</button>'
+                + '<button onclick="eliminarClienteSimple(\'' + escapeHtml(key) + '\')" class="btn-delete" style="padding:4px 8px;font-size:0.75rem;" title="Eliminar">🗑️</button>'
+                + '</td></tr>';
+        }
+
+        return '<tr data-key="' + escapeHtml(key) + '">'
             + '<td><strong>' + escapeHtml(g.nombre) + '</strong></td>'
             + '<td>📞 ' + escapeHtml(g.tel) + '</td>'
             + '<td>' + (g.email ? '✉️ ' + escapeHtml(g.email) : '<span style="color:#94a3b8;">—</span>') + '</td>'
             + '<td>' + g.compras + ' compra' + (g.compras !== 1 ? 's' : '') + '</td>'
             + '<td><strong>$' + g.total.toFixed(2) + '</strong></td>'
-            + '<td style="text-align:center;"><button class="btn-edit-action" onclick="cambiarAVentas(\'' + escapeHtml(key) + '\')" style="font-size:0.75rem;">💰 Ver ventas</button></td>'
-            + '</tr>';
+            + '<td class="table-actions-cell" style="justify-content:center;gap:4px;">'
+            + '<button onclick="iniciarEdicionClienteSimple(\'' + escapeHtml(key) + '\')" class="btn-edit-action" style="padding:4px 8px;font-size:0.75rem;" title="Editar">✏️</button>'
+            + '<button onclick="eliminarClienteSimple(\'' + escapeHtml(key) + '\')" class="btn-delete" style="padding:4px 8px;font-size:0.75rem;" title="Eliminar">🗑️</button>'
+            + '</td></tr>';
     }).join('');
 }
 
-window.cambiarAVentas = function(key) {
-    window._expandirGrupoVenta = key;
-    document.getElementById('buscar-venta').value = '';
-    mostrarSeccion('sec-ventas');
+window.iniciarEdicionClienteSimple = function(key) {
+    _clientesEditandoKey = key;
+    renderizarClientesSimples();
+};
+
+window.cancelarEdicionClienteSimple = function() {
+    _clientesEditandoKey = null;
+    renderizarClientesSimples();
+};
+
+window.guardarClienteEditado = function(oldKey) {
+    var nuevoNombre = document.getElementById('cli-edit-nombre').value.trim();
+    var nuevoTel = document.getElementById('cli-edit-tel').value.trim();
+    var nuevoEmail = document.getElementById('cli-edit-email').value.trim();
+    if (!nuevoNombre || !nuevoTel) { mostrarToastNotificacion('Nombre y teléfono son requeridos', 'error'); return; }
+
+    var parts = oldKey.split('|');
+    var oldNombre = parts[0];
+    var oldTel = parts[1];
+
+    // Actualizar clientes[] (ventas)
+    clientes.forEach(function(c) {
+        if (c.nombre === oldNombre && c.tel === oldTel) {
+            c.nombre = nuevoNombre;
+            c.tel = nuevoTel;
+            c.email = nuevoEmail || '';
+        }
+    });
+
+    // Actualizar usuariosRegistrados
+    var usuarios = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
+    var modificado = false;
+    usuarios.forEach(function(u) {
+        if (u.nombre === oldNombre && u.tel === oldTel) {
+            u.nombre = nuevoNombre;
+            u.tel = nuevoTel;
+            u.email = nuevoEmail || u.email || '';
+            modificado = true;
+        }
+    });
+    if (modificado) localStorage.setItem('usuariosRegistrados', JSON.stringify(usuarios));
+
+    actualizarSistema();
+    _clientesEditandoKey = null;
+    renderizarClientesSimples();
+    renderizarVentas();
+    mostrarToastNotificacion('Cliente actualizado');
+};
+
+window.eliminarClienteSimple = function(key) {
+    var parts = key.split('|');
+    var nombre = parts[0];
+    var tel = parts[1];
+    if (!confirm('¿Eliminar todos los registros de "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+
+    // Eliminar de clientes[] (ventas)
+    for (var i = clientes.length - 1; i >= 0; i--) {
+        if (clientes[i].nombre === nombre && clientes[i].tel === tel) {
+            clientes.splice(i, 1);
+        }
+    }
+
+    // Eliminar de usuariosRegistrados
+    var usuarios = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
+    var nuevos = usuarios.filter(function(u) { return !(u.nombre === nombre && u.tel === tel); });
+    if (nuevos.length !== usuarios.length) localStorage.setItem('usuariosRegistrados', JSON.stringify(nuevos));
+
+    actualizarSistema();
+    _clientesEditandoKey = null;
+    renderizarClientesSimples();
+    renderizarVentas();
+    mostrarToastNotificacion('Cliente eliminado');
 };
 
 function activarEdicionCliente(index) { abrirModalEdicionCliente(index); }
@@ -2492,59 +2607,6 @@ document.addEventListener('DOMContentLoaded', () => {
         originalMostrarSeccion(id, sub);
         if (id === 'sec-config') cargarConfiguracion();
         if (id === 'sec-pedidos') renderizarPedidos();
-    };
-
-    // ========== USUARIOS REGISTRADOS EN LA WEB ==========
-    window.renderizarUsuarios = function() {
-        const tbody = document.getElementById('tabla-usuarios');
-        if (!tbody) return;
-        const usuarios = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
-        const countEl = document.getElementById('clientes-usuarios-count');
-        if (countEl) countEl.textContent = usuarios.length;
-
-        if (usuarios.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color: #94a3b8;">No hay usuarios registrados todavía. Cuando alguien se registre en la tienda online, aparecerá aquí.</td></tr>';
-            return;
-        }
-
-        const escapeHtml = (s) => String(s == null ? '' : s)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-
-        tbody.innerHTML = usuarios.map(u => {
-            const fecha = u.fechaRegistro ? new Date(u.fechaRegistro) : null;
-            const fechaStr = fecha ? fecha.toLocaleString('es-VE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-            const initial = (u.nombre || 'U').charAt(0).toUpperCase();
-            return `<tr>
-                <td><div style="width:40px; height:40px; background:#4f46e5; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1rem;">${initial}</div></td>
-                <td><strong>${escapeHtml(u.nombre)}</strong></td>
-                <td>${escapeHtml(u.email)}</td>
-                <td>${escapeHtml(u.tel)}</td>
-                <td>${fechaStr}</td>
-                <td class="table-actions-cell" style="justify-content:center;">
-                    <button onclick="eliminarUsuarioWeb('${u.id}')" class="btn-edit-action" style="background:#fee2e2; color:#991b1b;">🗑️ Eliminar</button>
-                </td>
-            </tr>`;
-        }).join('');
-    };
-
-    window.eliminarUsuarioWeb = function(id) {
-        const usuarios = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
-        const u = usuarios.find(x => x.id === id);
-        if (!u) return;
-        if (!confirm(`¿Eliminar al usuario "${u.nombre}"? Esta acción no se puede deshacer.`)) return;
-        const nuevos = usuarios.filter(x => x.id !== id);
-        localStorage.setItem('usuariosRegistrados', JSON.stringify(nuevos));
-
-        // Si era el usuario actual de la sesión, cerrarla
-        const session = JSON.parse(localStorage.getItem('usuarioActual') || 'null');
-        if (session && session.id === id) {
-            localStorage.removeItem('usuarioActual');
-        }
-
-        actualizarDashboard();
-        renderizarUsuarios();
-        mostrarToastNotificacion('Usuario eliminado');
     };
 
     // ========== MIGRACION A SUPABASE ==========
