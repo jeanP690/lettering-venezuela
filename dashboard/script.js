@@ -111,6 +111,7 @@ function mostrarSeccion(id, subSeccionPorDefecto = 'categorias') {
     if(id === 'sec-clientes') { 
         clienteEditandoIndex = null; 
         renderizarClientesSimples(); 
+        if (typeof window.renderizarUsuarios === 'function') window.renderizarUsuarios(); 
     }
     if(id === 'sec-ventas') { 
         clienteEditandoIndex = null; 
@@ -2491,7 +2492,6 @@ document.addEventListener('DOMContentLoaded', () => {
         originalMostrarSeccion(id, sub);
         if (id === 'sec-config') cargarConfiguracion();
         if (id === 'sec-pedidos') renderizarPedidos();
-        if (id === 'sec-usuarios') renderizarUsuarios();
     };
 
     // ========== USUARIOS REGISTRADOS EN LA WEB ==========
@@ -2499,6 +2499,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('tabla-usuarios');
         if (!tbody) return;
         const usuarios = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
+        const countEl = document.getElementById('clientes-usuarios-count');
+        if (countEl) countEl.textContent = usuarios.length;
 
         if (usuarios.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color: #94a3b8;">No hay usuarios registrados todavía. Cuando alguien se registre en la tienda online, aparecerá aquí.</td></tr>';

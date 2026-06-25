@@ -26,7 +26,6 @@
                 <button class="menu-item" onclick="mostrarSeccion('sec-ventas')">💰 Ventas</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-productos')">📦 Productos</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-pedidos')">🛒 Pedidos</button>
-                <button class="menu-item" onclick="mostrarSeccion('sec-usuarios')">👤 Usuarios</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-historial')">📜 Historial</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-config')">⚙️ Configuración</button>
             </nav>
@@ -160,6 +159,28 @@
                                 </tr>
                             </thead>
                             <tbody id="tabla-clientes-simples"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="clientes-usuarios-section" style="margin-top:24px;border-top:2px solid var(--border);padding-top:16px;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                        <h2 style="margin:0;font-size:1.1rem;">👤 Usuarios Registrados en la Web</h2>
+                        <span id="clientes-usuarios-count" style="background:#4f46e5;color:white;padding:2px 10px;border-radius:20px;font-size:0.8rem;font-weight:600;">0</span>
+                    </div>
+                    <div class="table-wrapper text-scrollable">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:60px;">Avatar</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Fecha de Registro</th>
+                                    <th style="text-align:center;width:140px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-usuarios"></tbody>
                         </table>
                     </div>
                 </div>
@@ -453,26 +474,6 @@
                     </table>
                 </div>
             </section>
-
-            <section id="sec-usuarios" class="tab-content">
-                <div class="title-container"><h1>Usuarios Registrados en la Web</h1></div>
-                <div class="table-wrapper text-scrollable">
-                    <table class="modern-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 60px;">Avatar</th>
-                                <th>Nombre</th>
-                                <th>Email</th>
-                                <th>Teléfono</th>
-                                <th>Fecha de Registro</th>
-                                <th style="text-align: center; width: 140px;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-usuarios"></tbody>
-                    </table>
-                </div>
-            </section>
-
             <section id="sec-config" class="tab-content">
                 <div class="title-container"><h1>Configuración General</h1></div>
 
