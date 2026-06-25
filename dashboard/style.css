@@ -1020,9 +1020,9 @@ form .file-upload-btn-recibo:hover {
 }
 
 .gallery-add-card { 
-    min-width: 80px; width: 80px; height: 80px; 
+    min-width: 60px; width: 60px; height: 60px; 
     border: 2px dashed var(--border-darker); 
-    border-radius: 12px; 
+    border-radius: 10px; 
     display: flex; 
     flex-direction: column; 
     align-items: center; 
@@ -1042,17 +1042,18 @@ form .file-upload-btn-recibo:hover {
 
 .recibos-miniaturas-flex { 
     display: flex; 
-    gap: 12px; 
+    flex-wrap: wrap; 
+    gap: 10px; 
 }
 
 .img-manager-thumb { 
-    width: 80px; height: 80px; 
+    width: 60px; height: 60px; 
     object-fit: cover; 
-    border-radius: 12px; 
+    border-radius: 10px; 
     cursor: pointer; 
     border: 3px solid transparent; 
     transition: all 0.2s; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06); 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06); 
 }
 
 .img-manager-thumb:hover { transform: scale(1.04); }
@@ -1452,12 +1453,12 @@ form .file-upload-btn-recibo:hover {
     overflow: hidden;
 }
 .recibo-preview-grid .rp-thumb {
-    width: 100px;
-    height: 100px;
+    width: 70px;
+    height: 70px;
     object-fit: cover;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 2px solid #e2e8f0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     transition: transform 0.2s;
     max-width: 100%;
 }
