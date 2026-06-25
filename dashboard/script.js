@@ -635,7 +635,7 @@ function renderizarTabla() {
         let renderFotos = fotosArray.length > 0
             ? `<div class="mini-fotos-stack" onclick="abrirManagerFotosProducto(${i})">${fotosArray.slice(0, 2).map(img => `<img src="${img}" class="img-preview-recibo">`).join('')}${fotosArray.length > 2 ? `<span class="badge-mas-fotos">+${fotosArray.length - 2}</span>` : ''}</div>`
             : `<button class="btn-edit-action" onclick="abrirManagerFotosProducto(${i})" style="font-size:0.75rem;">📸 Subir</button>`;
-        return `<tr><td>${renderFotos}</td><td><strong>${p.nombre}</strong></td><td>${p.categoria||'—'}</td><td><span class="badge-producto">${p.marca||'—'}</span></td><td>${p.cantidad}</td><td>$${p.precio.toFixed(2)}</td><td class="table-actions-cell" style="justify-content:center;"><button onclick="activarEdicionProducto(${i})" class="btn-edit-action">✏️ Editar</button></td></tr>`;
+        return `<tr><td>${renderFotos}</td><td><strong>${p.nombre}</strong></td><td>${p.categoria||'—'}</td><td><span class="badge-producto">${p.marca||'—'}</span></td><td><span class="stock-marker ${p.cantidad <= 0 ? 'stock-rojo' : p.cantidad <= 5 ? 'stock-amarillo' : 'stock-verde'}">${p.cantidad}</span></td><td>$${p.precio.toFixed(2)}</td><td class="table-actions-cell" style="justify-content:center;"><button onclick="activarEdicionProducto(${i})" class="btn-edit-action">✏️ Editar</button></td></tr>`;
     }).join('');
 }
 function activarEdicionProducto(index) { productoEditandoIndex = index; renderizarTabla(); }
@@ -675,7 +675,8 @@ window.Clientes = {
             return;
         }
         dropdown.innerHTML = matches.slice(0, 15).map(function(p) {
-            var stockLabel = p.cantidad <= 5 ? ' <span style="color:#ef4444;font-size:0.7rem;">(stock: ' + p.cantidad + ')</span>' : '';
+            var stockClass = p.cantidad <= 0 ? 'stock-rojo' : p.cantidad <= 5 ? 'stock-amarillo' : 'stock-verde';
+            var stockLabel = p.cantidad <= 5 ? ' <span class="stock-marker ' + stockClass + '" style="font-size:0.65rem;padding:1px 6px;">' + p.cantidad + '</span>' : '';
             return '<div class="product-search-item" data-producto="' + escapeHtml(p.nombre) + '">'
                 + '<span class="psi-nombre">' + escapeHtml(p.nombre) + '</span>'
                 + '<span><span class="psi-precio">$' + p.precio.toFixed(2) + '</span>' + stockLabel + '</span>'
@@ -874,7 +875,8 @@ window.Ventas = {
             return;
         }
         dropdown.innerHTML = matches.slice(0, 15).map(function(p) {
-            var stockLabel = p.cantidad <= 5 ? ' <span style="color:#ef4444;font-size:0.7rem;">(stock: ' + p.cantidad + ')</span>' : '';
+            var stockClass = p.cantidad <= 0 ? 'stock-rojo' : p.cantidad <= 5 ? 'stock-amarillo' : 'stock-verde';
+            var stockLabel = p.cantidad <= 5 ? ' <span class="stock-marker ' + stockClass + '" style="font-size:0.65rem;padding:1px 6px;">' + p.cantidad + '</span>' : '';
             return '<div class="product-search-item" data-producto="' + escapeHtml(p.nombre) + '">'
                 + '<span class="psi-nombre">' + escapeHtml(p.nombre) + '</span>'
                 + '<span><span class="psi-precio">$' + p.precio.toFixed(2) + '</span>' + stockLabel + '</span>'
