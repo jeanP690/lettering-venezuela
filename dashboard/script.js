@@ -2318,109 +2318,90 @@ document.addEventListener('DOMContentLoaded', () => {
         const pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
 
         if (pedidos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 30px; color: #94a3b8;">No hay pedidos. Cuando un cliente finalice una compra en la tienda online, aparecerá aquí.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color: #94a3b8;">No hay pedidos. Cuando un cliente finalice una compra en la tienda online, aparecerá aquí.</td></tr>';
             return;
         }
 
         tbody.innerHTML = pedidos.map((p, i) => {
             const itemsDesc = (p.items || []).map(it => it.nombre + ' (x' + it.cantidad + ')').join(', ');
+            const fecha = p.fecha || '—';
 
-            if (pedidoEditandoIndex === i) {
-                return '<tr class="editing-row">'
-                    + '<td><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:0.85rem;">' + (p.id || 'PED-' + i) + '</code></td>'
-                    + '<td>' + (p.userNombre || 'Anónimo') + '</td>'
-                    + '<td>' + (p.userEmail || '—') + '<br>' + (p.userTel || '—') + '</td>'
-                    + '<td>' + (p.fecha || '—') + '</td>'
-                    + '<td style="font-size:0.85rem; max-width:200px;">' + itemsDesc + '</td>'
-                    + '<td><strong>$' + (p.totalUSD || 0).toFixed(2) + '</strong></td>'
-                    + '<td>Bs. ' + (p.totalBS || 0).toFixed(2) + '</td>'
-                    + '<td><select id="edit-pedido-estado-' + i + '" class="table-input-compact">'
-                    + '<option value="pendiente"' + (p.estado === 'pendiente' ? ' selected' : '') + '>⏳ Pendiente</option>'
-                    + '<option value="aprobado"' + (p.estado === 'aprobado' ? ' selected' : '') + '>✓ Aprobado</option>'
-                    + '<option value="cancelado"' + (p.estado === 'cancelado' ? ' selected' : '') + '>✕ Cancelado</option>'
-                    + '<option value="entregado"' + (p.estado === 'entregado' ? ' selected' : '') + '>✅ Entregado</option>'
-                    + '</select></td>'
-                    + '<td class="table-actions-cell">'
-                    + '<button onclick="guardarEdicionPedido(' + i + ')" class="btn-save">💾</button>'
-                    + '<button onclick="cancelarEdicionPedido()" class="btn-cancel">❌</button>'
-                    + '</td>'
-                    + '</tr>';
-            }
+            var nombreCliente = p.userNombre || 'Anónimo';
+            var telefono = p.userTel || '—';
+            var waLink = telefono !== '—' ? 'https://wa.me/' + telefono.replace(/[^0-9]/g, '') : null;
 
-            var contacto = p.userEmail
-                ? '<a href="mailto:' + p.userEmail + '" style="color:var(--color-primary);">' + p.userEmail + '</a>'
-                : '—';
-            if (p.userTel) contacto += '<br><span style="font-size:0.8rem; color:#64748b;">📞 ' + p.userTel + '</span>';
+            var badgeEstado = '';
+            if (p.estado === 'aprobado') badgeEstado = '<span style="background:#dcfce7;color:#16a34a;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;">✅ Guardado</span>';
+            else if (p.estado === 'cancelado') badgeEstado = '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;">❌ Cancelado</span>';
+            else badgeEstado = '<span style="background:#fef9c3;color:#a16207;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;">⏳ Pendiente</span>';
 
-            var cliente = p.userNombre
-                ? '<strong>' + p.userNombre + '</strong>'
-                : '<span style="color:#94a3b8;">Anónimo</span>';
+            var guardarBtn = (p.estado !== 'aprobado' && p.estado !== 'cancelado')
+                ? '<button onclick="aprobarPedido(' + i + ')" class="btn-edit-action" style="background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;padding:6px 14px;font-weight:600;">✅ Guardar</button>'
+                : '';
+            var cancelarBtn = (p.estado !== 'aprobado' && p.estado !== 'cancelado')
+                ? '<button onclick="cancelarPedido(' + i + ')" class="btn-edit-action" style="background:#fee2e2;color:#dc2626;border:1px solid #fecaca;padding:6px 14px;font-weight:600;">❌ Cancelar</button>'
+                : '';
+            var eliminarBtn = (p.estado === 'aprobado' || p.estado === 'cancelado')
+                ? '<button onclick="eliminarPedido(' + i + ')" class="btn-edit-action" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;padding:6px 14px;">🗑️</button>'
+                : '';
 
             return '<tr>'
-                + '<td><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:0.85rem;">' + (p.id || 'PED-' + i) + '</code></td>'
-                + '<td>' + cliente + '</td>'
-                + '<td style="font-size:0.85rem;">' + contacto + '</td>'
-                + '<td>' + (p.fecha || '—') + '</td>'
-                + '<td style="font-size:0.85rem; max-width:200px;">' + (itemsDesc || '—') + '</td>'
-                + '<td><strong>$' + (p.totalUSD || 0).toFixed(2) + '</strong></td>'
-                + '<td>Bs. ' + (p.totalBS || 0).toFixed(2) + '</td>'
-                + '<td>' + getEstadoBadge(p.estado) + '</td>'
-                + '<td class="table-actions-cell" style="justify-content:center;">'
-                + '<button onclick="activarEdicionPedido(' + i + ')" class="btn-edit-action">✏️</button>'
-                + '<button onclick="eliminarPedido(' + i + ')" class="btn-edit-action" style="background:#fee2e2; color:#991b1b;">🗑️</button>'
-                + '</td>'
+                + '<td><strong>' + nombreCliente + '</strong><br>' + (waLink ? '<a href="' + waLink + '" target="_blank" style="font-size:0.75rem;color:#22c55e;text-decoration:none;">📱 ' + telefono + '</a>' : '<span style="font-size:0.75rem;color:#94a3b8;">📱 ' + telefono + '</span>') + '</td>'
+                + '<td style="font-size:0.85rem;">' + itemsDesc + '</td>'
+                + '<td><strong>$' + (p.totalUSD || 0).toFixed(2) + '</strong><br><span style="font-size:0.75rem;color:#64748b;">Bs. ' + (p.totalBS || 0).toFixed(2) + '</span></td>'
+                + '<td>' + badgeEstado + '</td>'
+                + '<td class="table-actions-cell" style="gap:6px;">' + guardarBtn + cancelarBtn + eliminarBtn + '</td>'
                 + '</tr>';
         }).join('');
     }
 
-    window.activarEdicionPedido = function(i) {
-        pedidoEditandoIndex = i;
-        renderizarPedidos();
-    };
-
-    window.cancelarEdicionPedido = function() {
-        pedidoEditandoIndex = null;
-        renderizarPedidos();
-    };
-
-    window.guardarEdicionPedido = function(i) {
+    window.aprobarPedido = function(i) {
         const pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
         if (!pedidos[i]) return;
-        var nuevoEstado = document.getElementById('edit-pedido-estado-' + i).value;
-        var viejoEstado = pedidos[i].estado;
-        pedidos[i].estado = nuevoEstado;
-        if (nuevoEstado === 'aprobado' && viejoEstado !== 'aprobado') {
-            const p = pedidos[i];
-            var fotosItems = [];
-            var fotosSet = {};
-            (p.items || []).forEach(function(it) {
-                if (it.foto && !fotosSet[it.foto]) { fotosSet[it.foto] = true; fotosItems.push(it.foto); }
-            });
-            var productosArr = (p.items || []).map(function(it) { return it.nombre; });
-            var cantidadesArr = (p.items || []).map(function(it) { return it.cantidad || 1; });
-            clientes.push({
-                fechaRegistro: p.fecha,
-                nombre: p.userNombre || 'Cliente Web ' + (p.id || ''),
-                tel: p.userTel || '—',
-                productos: productosArr,
-                cantidades: cantidadesArr,
-                productoVendido: productosArr.join(', '),
-                total: p.totalUSD || 0,
-                totalBs: p.totalBS || 0,
-                pagado: 0,
-                pagadoBs: 0,
-                fotoProducto: fotosItems,
-                recibo: [],
-                origen: 'tienda-online',
-                pedidoId: p.id
-            });
-            localStorage.setItem('clientes', JSON.stringify(clientes));
-        }
+        if (pedidos[i].estado === 'aprobado') return;
+        const p = pedidos[i];
+        pedidos[i].estado = 'aprobado';
+        var fotosItems = [];
+        var fotosSet = {};
+        (p.items || []).forEach(function(it) {
+            if (it.foto && !fotosSet[it.foto]) { fotosSet[it.foto] = true; fotosItems.push(it.foto); }
+        });
+        var productosArr = (p.items || []).map(function(it) { return it.nombre; });
+        var cantidadesArr = (p.items || []).map(function(it) { return it.cantidad || 1; });
+        var tasaActual = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
+        clientes.push({
+            fechaRegistro: p.fecha,
+            nombre: p.userNombre || 'Cliente Web ' + (p.id || ''),
+            tel: p.userTel || '—',
+            productos: productosArr,
+            cantidades: cantidadesArr,
+            productoVendido: productosArr.join(', '),
+            total: p.totalUSD || 0,
+            totalBs: p.totalBS || 0,
+            pagado: 0,
+            pagadoBs: 0,
+            fotoProducto: fotosItems,
+            recibo: [],
+            origen: 'tienda-online',
+            pedidoId: p.id,
+            tasa: tasaActual
+        });
+        localStorage.setItem('clientes', JSON.stringify(clientes));
         localStorage.setItem('pedidosPendientes', JSON.stringify(pedidos));
-        pedidoEditandoIndex = null;
         actualizarSistema();
         renderizarPedidos();
-        mostrarToastNotificacion('Pedido actualizado');
+        mostrarToastNotificacion('✅ Pedido guardado en Ventas');
+    };
+
+    window.cancelarPedido = function(i) {
+        if (!confirm('¿Cancelar este pedido?')) return;
+        const pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
+        if (!pedidos[i]) return;
+        pedidos[i].estado = 'cancelado';
+        localStorage.setItem('pedidosPendientes', JSON.stringify(pedidos));
+        actualizarSistema();
+        renderizarPedidos();
+        mostrarToastNotificacion('❌ Pedido cancelado');
     };
 
     window.eliminarPedido = function(i) {
