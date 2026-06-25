@@ -95,12 +95,12 @@
         var imgClass = 'producto-card-image' + (noPhoto ? ' no-photo' : '');
         var actionsHtml = isPlaceholder
             ? '<button class=\"btn-add-cart\" disabled style=\"opacity:0.55; cursor:not-allowed;\"> Proximamente</button>'
-            : '<button class=\"btn-add-cart\" onclick=\"Home.addToCart(\\'' + escapeAttr(p.nombre) + '\\', event)\"> Anadir</button>';
+            : '<button class=\"btn-add-cart\" onclick=\"Home.addToCart(\'' + escapeAttr(p.nombre) + "', event)\"> Anadir</button>";
         var priceHtml = isPlaceholder
             ? '<span class=\"price-usd\" style=\"color: var(--color-primary);\">Proximamente</span><span class=\"price-bs\">.00</span>'
             : '<span class=\"price-usd\">' + (window.Currency ? window.Currency.formatUSD(p.precio) : '$' + parseFloat(p.precio).toFixed(2)) + '</span>'
             + '<span class=\"price-bs\">' + (window.Currency ? window.Currency.formatBS(window.Currency.usdToBs(p.precio)) : 'Bs. ' + (parseFloat(p.precio) * 36.5).toFixed(2)) + '</span>';
-        var imageClick = isPlaceholder ? '' : 'onclick=\"Home.openProduct(\\'' + escapeAttr(p.nombre) + '\\')\"';
+        var imageClick = isPlaceholder ? '' : 'onclick=\"Home.openProduct(\'' + escapeAttr(p.nombre) + "')\"";
         return '<div class=\"carousel-slide\"><div class=\"producto-card' + (isPlaceholder ? ' is-placeholder' : '') + '\">'
             + (tag ? '<span class=\"producto-card-tag\">' + escapeHtml(tag) + '</span>' : '')
             + '<div class=\"' + imgClass + '\" style=\"' + bgStyle + '\" ' + imageClick + ' role=\"img\" aria-label=\"' + escapeHtml(p.nombre) + '\"></div>'

@@ -1057,8 +1057,11 @@ function renderizarClientes() {
                 var cantidades = c.cantidades || [];
                 var productoHtml = prods.map(function(p, idx) {
                     var qty = cantidades[idx] || 1;
-                    return '<span class="badge-producto" style="cursor:pointer;" onclick="mostrarInfoProducto(\'' + escapeHtml(p) + '\')">' + escapeHtml(p) + (qty > 1 ? ' <strong>x' + qty + '</strong>' : '') + '</span>';
-                }).join(' ');
+                    var prodInv = inventario.find(function(ip) { return ip.nombre === p; });
+                    var fotoUrl = prodInv && prodInv.fotos && prodInv.fotos.length > 0 ? prodInv.fotos[0] : null;
+                    var fotoImg = fotoUrl ? '<img src="' + fotoUrl + '" class="cli-prod-thumb" alt="">' : '<div class="cli-prod-thumb cli-prod-thumb-placeholder">' + (p ? p.charAt(0).toUpperCase() : '—') + '</div>';
+                    return '<div class="cli-prod-cell" onclick="mostrarInfoProducto(\'' + escapeHtml(p) + '\')">' + fotoImg + '<span class="cli-prod-name">' + escapeHtml(p) + (qty > 1 ? ' <strong>x' + qty + '</strong>' : '') + '</span></div>';
+                }).join('');
 
                 var montoHtml = '<div style="white-space:nowrap;"><strong style="color:#1e293b;">$' + (c.total||0).toFixed(2) + '</strong>'
                     + '<br><span style="color:#64748b;font-size:0.85rem;">Bs. ' + totalBs.toFixed(2) + '</span></div>';
@@ -1076,6 +1079,21 @@ function renderizarClientes() {
                     + '<td>' + reciboRender + '</td>'
                     + '<td style="text-align:center;"><button onclick="activarEdicionCliente(' + i + ')" class="btn-edit-action" style="padding:4px 10px;font-size:0.8rem;" title="Editar">✏️</button></td>'
                     + '</tr>';
+
+                var abonos = c.abonos || [];
+                var statusColor = s.status === 'pagado' ? '#16a34a' : s.status === 'parcial' ? '#d97706' : '#ef4444';
+                var statusLabel = s.status === 'pagado' ? '✅ Pagado' : s.status === 'parcial' ? '⚠️ Parcial' : '❌ Deuda';
+
+                html += '<tr class="cli-pago-summary-row"><td colspan="6"><div class="cli-pago-summary">'
+                    + '<div class="cli-pago-bar">'
+                    + '<span class="cli-pago-badge" style="background:' + statusColor + ';">' + statusLabel + '</span>'
+                    + '<span class="cli-pago-amount"><strong>Total:</strong> $' + (c.total||0).toFixed(2) + '</span>'
+                    + '<span class="cli-pago-amount"><strong>Pagado:</strong> $' + (c.pagado||0).toFixed(2) + '</span>'
+                    + '<span class="cli-pago-amount"><strong>Deuda:</strong> $' + s.deuda.toFixed(2) + '</span>'
+                    + '<button class="btn-edit-action" onclick="Clientes.abrirAbono(' + i + ')" style="padding:4px 10px;font-size:0.8rem;background:#dbeafe;color:#1e40af;">💰 Abono</button>'
+                    + '</div>'
+                    + (abonos.length > 0 ? '<div class="cli-pago-abonos">' + abonos.map(function(a) { return '<span class="cli-pago-abono-entry">' + (a.fecha||'—') + ' · $' + (a.usd||0).toFixed(2) + (a.bs > 0 ? ' + Bs. ' + a.bs.toFixed(2) : '') + (a.tasa > 0 ? ' @ ' + a.tasa.toFixed(2) : '') + '</span>'; }).join('') + '</div>' : '')
+                    + '</div></td></tr>';
             });
 
             html += '</tbody></table>';

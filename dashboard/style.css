@@ -1460,6 +1460,113 @@ form .file-upload-btn-recibo:hover {
     transform: scale(1.08);
 }
 
+/* ==========================================
+   CLIENT PRODUCT CELL (imagen + nombre)
+   ========================================== */
+.cli-prod-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 4px 10px 4px 4px;
+    margin: 2px 4px 2px 0;
+    transition: background 0.15s, border-color 0.15s;
+    max-width: 100%;
+}
+.cli-prod-cell:hover {
+    background: #f1f3fa;
+    border-color: #cbd5e1;
+}
+.cli-prod-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f1f5f9;
+}
+.cli-prod-thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    background: #f1f5f9;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+.cli-prod-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    max-width: 180px;
+}
+
+/* ==========================================
+   CLIENT PAYMENT SUMMARY (por compra)
+   ========================================== */
+.cli-pago-summary-row td {
+    padding: 0 !important;
+    border-bottom: none !important;
+}
+.cli-pago-summary-row:hover td {
+    background: transparent !important;
+}
+.cli-pago-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 24px 12px 54px;
+    background: #fafbff;
+    border-bottom: 1px solid #e2e8f0;
+}
+.cli-pago-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.cli-pago-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+    white-space: nowrap;
+}
+.cli-pago-amount {
+    font-size: 0.8rem;
+    color: #475569;
+    white-space: nowrap;
+}
+.cli-pago-amount strong {
+    color: #1e293b;
+}
+.cli-pago-abonos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+.cli-pago-abono-entry {
+    font-size: 0.72rem;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
 @media (max-width: 1200px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr); /* 2x2 en pantallas medianas */

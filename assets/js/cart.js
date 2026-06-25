@@ -65,7 +65,7 @@
             container.innerHTML = cart.map(function (i) {
                 var foto = i.foto || '';
                 var imgHtml = foto ? '<img src=\"' + escapeAttr(foto) + '\" alt=\"' + escapeHtml(i.nombre) + '\">' : '<div class=\"cart-item-img-placeholder\" aria-label=\"' + escapeHtml(i.nombre) + '\"></div>';
-                return '<div class=\"cart-item\">' + imgHtml + '<div class=\"cart-item-info\"><p class=\"cart-item-name\">' + escapeHtml(i.nombre) + '</p><p class=\"cart-item-price\">' + window.Currency.formatUSD(i.precio) + '</p></div><div class=\"cart-item-qty\"><button onclick=\"Cart.update(\\'' + escapeAttr(i.nombre) + '\\', ' + (i.cantidad - 1) + ')\" aria-label=\"Restar\">-</button><span>' + i.cantidad + '</span><button onclick=\"Cart.update(\\'' + escapeAttr(i.nombre) + '\\', ' + (i.cantidad + 1) + ')\" aria-label=\"Sumar\">+</button></div></div>';
+                return '<div class=\"cart-item\">' + imgHtml + '<div class=\"cart-item-info\"><p class=\"cart-item-name\">' + escapeHtml(i.nombre) + '</p><p class=\"cart-item-price\">' + window.Currency.formatUSD(i.precio) + '</p></div><div class=\"cart-item-qty\"><button onclick=\"Cart.update(\'' + escapeAttr(i.nombre) + "', " + (i.cantidad - 1) + ')\" aria-label=\"Restar\">-</button><span>' + i.cantidad + '</span><button onclick=\"Cart.update(\'' + escapeAttr(i.nombre) + "', " + (i.cantidad + 1) + ')\" aria-label=\"Sumar\">+</button></div></div>';
             }).join('');
         }
         var usdEl = document.getElementById('cart-total-usd');
