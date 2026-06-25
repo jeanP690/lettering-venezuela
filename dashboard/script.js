@@ -64,6 +64,26 @@ function mostrarToastNotificacion(mensaje, tipo = "success") {
     }, 3500);
 }
 
+function mostrarConfirmacion(mensaje) {
+    return new Promise(function(resolve) {
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(4px);z-index:200000;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease;';
+        var card = document.createElement('div');
+        card.style.cssText = 'background:white;border-radius:20px;padding:32px;max-width:420px;width:90%;box-shadow:0 25px 60px rgba(0,0,0,0.2);text-align:center;animation:modalSlideUp 0.25s cubic-bezier(0.16,1,0.3,1);';
+        card.innerHTML = '<div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>'
+            + '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:24px;line-height:1.5;">' + mensaje + '</div>'
+            + '<div style="display:flex;gap:12px;justify-content:center;">'
+            + '<button id="btn-confirm-si" style="padding:12px 28px;border:none;border-radius:12px;background:#ef4444;color:white;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;transition:all 0.2s;">Sí, continuar</button>'
+            + '<button id="btn-confirm-no" style="padding:12px 28px;border:2px solid #e2e8f0;border-radius:12px;background:white;color:#64748b;font-weight:600;font-size:0.9rem;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;transition:all 0.2s;">Cancelar</button>'
+            + '</div>';
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        document.getElementById('btn-confirm-si').onclick = function() { overlay.remove(); resolve(true); };
+        document.getElementById('btn-confirm-no').onclick = function() { overlay.remove(); resolve(false); };
+        overlay.onclick = function(e) { if (e.target === overlay) { overlay.remove(); resolve(false); } };
+    });
+}
+
 function toggleFormulario(idContenedor) {
     const form = document.getElementById(idContenedor);
     if (!form) return;
@@ -434,8 +454,8 @@ function guardarEdicionCategoria(index) {
     renderizarCategorias();
     mostrarToastNotificacion("Categoría actualizada");
 }
-function eliminarCategoria(index) {
-    if(!confirm("¿Eliminar categoría?")) return;
+async function eliminarCategoria(index) {
+    if(!(await mostrarConfirmacion("¿Eliminar categoría?"))) return;
     categories.splice(index, 1);
     actualizarSistema();
     renderizarCategorias();
@@ -482,8 +502,8 @@ function guardarEdicionMarca(index) {
     renderizarMarcas();
     mostrarToastNotificacion("Marca actualizada");
 }
-function eliminarMarca(index) {
-    if(!confirm("¿Eliminar marca?")) return;
+async function eliminarMarca(index) {
+    if(!(await mostrarConfirmacion("¿Eliminar marca?"))) return;
     marcas.splice(index, 1);
     actualizarSistema();
     renderizarMarcas();
@@ -1734,11 +1754,11 @@ window.guardarClienteEditado = function(oldKey) {
     mostrarToastNotificacion('Cliente actualizado');
 };
 
-window.eliminarClienteSimple = function(key) {
+window.eliminarClienteSimple = async function(key) {
     var parts = key.split('|');
     var nombre = parts[0];
     var tel = parts[1];
-    if (!confirm('¿Eliminar el perfil de "' + nombre + '" de la lista de clientes? Las ventas registradas en Ventas no se eliminarán.')) return;
+    if (!(await mostrarConfirmacion('¿Eliminar el perfil de "' + nombre + '" de la lista de clientes? Las ventas registradas en Ventas no se eliminarán.'))) return;
 
     // Eliminar solo de usuariosRegistrados (perfil del cliente)
     // Las ventas en clientes[] se conservan para la sección Ventas
@@ -1897,10 +1917,10 @@ window.guardarModalEdicionCliente = function() {
     mostrarToastNotificacion("Cambios guardados");
 };
 
-window.eliminarModalEdicionCliente = function() {
+window.eliminarModalEdicionCliente = async function() {
     var index = editModalClienteIndex;
     if (index === null) return;
-    if (!confirm("¿Eliminar esta venta?")) return;
+    if (!(await mostrarConfirmacion("¿Eliminar esta venta?"))) return;
     clientes.splice(index, 1);
     actualizarSistema();
     cerrarModalEdicionCliente();
@@ -1984,9 +2004,9 @@ async function prodFotosProcesarReemplazo(event) {
     prodFotosRefrescarModal();
 }
 
-function prodFotosEliminarSeleccionada() {
+async function prodFotosEliminarSeleccionada() {
     if (managerProductoFotoIndexSeleccionada === null) return;
-    if (!confirm("¿Eliminar esta foto?")) return;
+    if (!(await mostrarConfirmacion("¿Eliminar esta foto?"))) return;
     inventario[managerProductoIndexActivo].fotos.splice(managerProductoFotoIndexSeleccionada, 1);
     managerProductoFotoIndexSeleccionada = inventario[managerProductoIndexActivo].fotos.length > 0 ? 0 : null;
     actualizarSistema();
@@ -2021,9 +2041,9 @@ async function prodFotosAgregarPrincipal(event) {
     prodFotosRefrescarModal();
 }
 
-function prodFotosEstablecerComoPrincipal() {
+async function prodFotosEstablecerComoPrincipal() {
     if (managerProductoFotoIndexSeleccionada === null || managerProductoFotoIndexSeleccionada === 0) return;
-    if (!confirm("¿Establecer esta foto como principal? Se moverá al inicio.")) return;
+    if (!(await mostrarConfirmacion("¿Establecer esta foto como principal? Se moverá al inicio."))) return;
     const fotos = inventario[managerProductoIndexActivo].fotos;
     var idx = managerProductoFotoIndexSeleccionada;
     var foto = fotos.splice(idx, 1)[0];
@@ -2076,8 +2096,8 @@ async function singleFotoReemplazar(event) {
     img.style.display = 'block';
 }
 
-function singleFotoEliminar() {
-    if (!confirm(`¿Eliminar la foto de ${singleFotoManagerTipo === 'categoria' ? 'esta categoría' : 'esta marca'}?`)) return;
+async function singleFotoEliminar() {
+    if (!(await mostrarConfirmacion(`¿Eliminar la foto de ${singleFotoManagerTipo === 'categoria' ? 'esta categoría' : 'esta marca'}?`))) return;
     const arr = singleFotoManagerTipo === 'categoria' ? categories : marcas;
     arr[singleFotoManagerIndex].foto = "";
     actualizarSistema();
@@ -2227,9 +2247,9 @@ async function recibosProcesarReemplazo(event) {
     event.target.value = ""; 
     actualizarSistema(); recibosRefrescarModal();
 }
-function recibosEliminarSeleccionada() {
+async function recibosEliminarSeleccionada() {
     if(managerFotoIndexSeleccionada === null) return;
-    if(!confirm("¿Deseas remover esta foto?")) return;
+    if(!(await mostrarConfirmacion("¿Deseas remover esta foto?"))) return;
     clientes[managerClienteIndexActivo].recibo.splice(managerFotoIndexSeleccionada, 1);
     managerFotoIndexSeleccionada = clientes[managerClienteIndexActivo].recibo.length > 0 ? 0 : null;
     actualizarSistema(); recibosRefrescarModal();
@@ -2264,8 +2284,8 @@ function actualizarSistema() {
     actualizarDashboard();
 }
 
-function eliminarRegistro(tipo, i) {
-    if(!confirm("¿Deseas eliminar este registro?")) return;
+async function eliminarRegistro(tipo, i) {
+    if(!(await mostrarConfirmacion("¿Deseas eliminar este registro?"))) return;
     if(tipo === 'inv') inventario.splice(i, 1);
     else clientes.splice(i, 1);
     actualizarSistema();
@@ -2437,8 +2457,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarToastNotificacion('✅ Pedido guardado en Ventas');
     };
 
-    window.cancelarPedido = function(i) {
-        if (!confirm('¿Cancelar este pedido?')) return;
+    window.cancelarPedido = async function(i) {
+        if (!(await mostrarConfirmacion('¿Cancelar este pedido?'))) return;
         const pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
         if (!pedidos[i]) return;
         pedidos[i].estado = 'cancelado';
@@ -2448,8 +2468,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarToastNotificacion('❌ Pedido cancelado');
     };
 
-    window.eliminarPedido = function(i) {
-        if (!confirm('¿Eliminar este pedido permanentemente?')) return;
+    window.eliminarPedido = async function(i) {
+        if (!(await mostrarConfirmacion('¿Eliminar este pedido permanentemente?'))) return;
         const pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
         pedidos.splice(i, 1);
         localStorage.setItem('pedidosPendientes', JSON.stringify(pedidos));
