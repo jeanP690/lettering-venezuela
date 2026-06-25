@@ -1678,7 +1678,7 @@ function renderizarClientesSimples() {
     clientes.forEach(function(c) {
         if (terminoBusqueda && !c.nombre.toLowerCase().includes(terminoBusqueda)) return;
         var key = (c.nombre + '|' + c.tel).toLowerCase();
-        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, email: '', compras: 0, total: 0 };
+        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, email: c.email || '', compras: 0, total: 0 };
         groups[key].compras++;
         groups[key].total += c.total || 0;
     });
@@ -1782,6 +1782,10 @@ window.guardarClienteEditado = function(oldKey) {
             modificado = true;
         }
     });
+    if (!modificado && nuevoEmail) {
+        usuarios.push({ id: Date.now().toString(), nombre: nuevoNombre, tel: nuevoTel, email: nuevoEmail, fechaRegistro: new Date().toISOString() });
+        modificado = true;
+    }
     if (modificado) localStorage.setItem('usuariosRegistrados', JSON.stringify(usuarios));
 
     actualizarSistema();
