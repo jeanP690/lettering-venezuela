@@ -252,6 +252,10 @@ function actualizarSelectClientesVenta() {
         var key = (c.nombre + '|' + c.tel).toLowerCase();
         if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel };
     });
+    JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]').forEach(function(u) {
+        var key = (u.nombre + '|' + u.tel).toLowerCase();
+        if (!groups[key]) groups[key] = { nombre: u.nombre, tel: u.tel };
+    });
     var currentVal = sel.value;
     sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
     Object.keys(groups).forEach(function(key) {
