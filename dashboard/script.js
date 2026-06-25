@@ -137,7 +137,6 @@ function mostrarSeccion(id, subSeccionPorDefecto = 'categorias') {
         actualizarSelectVentas(); 
         renderizarVentas(); 
     }
-    if(id === 'sec-historial') renderizarHistorial();
 }
 
 function cambiarSubSeccion(subSeccion) {
@@ -2263,15 +2262,6 @@ async function recibosAgregarMasFotosNuevas(event) {
     managerFotoIndexSeleccionada = clientes[managerClienteIndexActivo].recibo.length - 1;
     event.target.value = ""; 
     actualizarSistema(); recibosRefrescarModal();
-}
-
-function renderizarHistorial() {
-    const tbody = document.getElementById('tabla-historial');
-    if (!tbody) return;
-    tbody.innerHTML = historialVentas.map(v => {
-        const desc = v.items ? v.items.map(i => `${i.nombre} (x${i.cantidad})`).join(', ') : 'Venta';
-        return `<tr><td>${v.fecha || '—'}</td><td>${desc}</td><td>$${parseFloat(v.total || 0).toFixed(2)}</td></tr>`;
-    }).join('');
 }
 
 // PERSISTENCIA COHERENTE
