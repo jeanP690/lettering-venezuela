@@ -1520,6 +1520,22 @@ function renderizarVentas() {
     const container = document.getElementById('ventas-table-container');
     if (!container) return;
 
+    // Populate date list
+    var fechaCount = {};
+    clientes.forEach(function(c) {
+        var f = (c.fechaRegistro || '').split('T')[0];
+        if (f) { fechaCount[f] = (fechaCount[f] || 0) + 1; }
+    });
+    var fechas = Object.keys(fechaCount).sort().reverse();
+    var datalist = document.getElementById('lista-fechas-ventas');
+    if (datalist) {
+        datalist.innerHTML = fechas.map(function(f) { return '<option value="' + f + '">'; }).join('');
+    }
+    var span = document.getElementById('dash-fechas-disponibles');
+    if (span) {
+        span.innerText = fechas.length > 0 ? '🗓️ ' + fechas.length + ' fechas' : '';
+    }
+
     var terminoBusqueda = (document.getElementById('buscar-venta')?.value.toLowerCase() || '').trim();
     var filtroFecha = document.getElementById('filtro-fecha-venta')?.value || '';
     var filtered = [];
