@@ -1720,6 +1720,21 @@ window.abrirModalEdicionCliente = function(index) {
     document.getElementById('edit-modal-pagado').value = c.pagado || 0;
     document.getElementById('edit-modal-pagadobs').value = c.pagadoBs || 0;
 
+    // Auto-calc pagadoBs cuando cambie pagado
+    var pagadoInput = document.getElementById('edit-modal-pagado');
+    if (pagadoInput && !pagadoInput._autoCalcEdit) {
+        pagadoInput._autoCalcEdit = true;
+        pagadoInput.addEventListener('input', function() {
+            var tasa = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
+            var pagadobsInput = document.getElementById('edit-modal-pagadobs');
+            if (tasa > 0 && this.value) {
+                pagadobsInput.value = (parseFloat(this.value) * tasa).toFixed(2);
+            } else if (!this.value) {
+                pagadobsInput.value = '';
+            }
+        });
+    }
+
     var lista = document.getElementById('edit-modal-productos-lista');
     lista.innerHTML = '';
     editModalProdContador = 0;
@@ -2077,31 +2092,22 @@ function abrirDetalleVenta(index) {
 
     var productosHtml = prods.map(function(p, idx) {
         var qty = cantidades[idx] || 1;
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9;">'
-            + '<span style="flex:1;">' + escapeHtml(p) + '</span>'
+        var prodInv = inventario.find(function(ip) { return ip.nombre === p; });
+        var fotoUrl = prodInv && prodInv.fotos && prodInv.fotos.length > 0 ? prodInv.fotos[0] : null;
+        var fotoImg = fotoUrl ? '<img src="' + fotoUrl + '" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0;">' : '<div style="width:40px;height:40px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-weight:700;font-size:0.9rem;flex-shrink:0;">' + (p ? p.charAt(0).toUpperCase() : '—') + '</div>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">'
+            + fotoImg
+            + '<span style="flex:1;font-weight:500;">' + escapeHtml(p) + '</span>'
             + '<span style="color:#64748b;">x' + qty + '</span>'
+            + '<span style="font-weight:600;color:#059669;">$' + ((prodInv ? prodInv.precio : 0) * qty).toFixed(2) + '</span>'
             + '</div>';
     }).join('');
 
-    var abonosHtml = '';
-    var abonos = c.abonos || [];
-    if (abonos.length > 0) {
-        abonosHtml = '<div style="margin-top:12px;"><strong style="color:#1e293b;">Historial de Abonos</strong></div>'
-            + abonos.map(function(a) {
-                return '<div style="display:flex;gap:12px;padding:4px 0;font-size:0.85rem;color:#475569;">'
-                    + '<span>' + (a.fecha || '—') + '</span>'
-                    + '<span>$' + (a.usd || 0).toFixed(2) + '</span>'
-                    + (a.bs > 0 ? '<span>Bs. ' + a.bs.toFixed(2) + '</span>' : '')
-                    + (a.tasa > 0 ? '<span style="color:#94a3b8;">@ ' + a.tasa.toFixed(2) + '</span>' : '')
-                    + '</div>';
-            }).join('');
-    }
-
     var fotosRecibos = c.recibo ? (Array.isArray(c.recibo) ? c.recibo : [c.recibo]) : [];
     var recibosHtml = fotosRecibos.length > 0
-        ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">'
+        ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">'
             + fotosRecibos.map(function(img) {
-                return '<img src="' + img + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;" onclick="window.open(\'' + img + '\')">';
+                return '<img src="' + img + '" style="width:100px;height:100px;object-fit:cover;border-radius:10px;border:2px solid #e2e8f0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.08);" onclick="window.open(\'' + img + '\')">';
             }).join('')
             + '</div>'
         : '<span style="color:#94a3b8;">Sin recibos</span>';
@@ -2112,7 +2118,7 @@ function abrirDetalleVenta(index) {
         + '<div><span style="color:#64748b;font-size:0.8rem;">Cliente</span><div style="font-weight:600;">' + escapeHtml(c.nombre) + '</div></div>'
         + '<div><span style="color:#64748b;font-size:0.8rem;">Teléfono</span><div>' + escapeHtml(c.tel || '—') + '</div></div>'
         + '<div><span style="color:#64748b;font-size:0.8rem;">Fecha</span><div>' + (c.fechaRegistro || '—') + '</div></div>'
-        + '<div><span style="color:#64748b;font-size:0.8rem;">Estado</span><div><span style="background:' + statusColor + ';color:white;padding:2px 8px;border-radius:12px;font-size:0.8rem;">' + statusLabel + '</span></div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Estado</span><div><span style="background:' + statusColor + ';color:white;padding:2px 10px;border-radius:12px;font-size:0.8rem;">' + statusLabel + '</span></div></div>'
         + '<div><span style="color:#64748b;font-size:0.8rem;">Total</span><div style="font-weight:700;font-size:1.1rem;">$' + (c.total||0).toFixed(2) + '</div></div>'
         + '<div><span style="color:#64748b;font-size:0.8rem;">Total Bs.</span><div>Bs. ' + totalBs.toFixed(2) + '</div></div>'
         + '<div><span style="color:#64748b;font-size:0.8rem;">Pagado</span><div style="color:#16a34a;font-weight:600;">$' + (c.pagado||0).toFixed(2) + '</div></div>'
@@ -2120,9 +2126,7 @@ function abrirDetalleVenta(index) {
         + '</div>'
         + '<div><strong style="color:#1e293b;">Productos</strong>' + productosHtml + '</div>'
         + '<div><strong style="color:#1e293b;">Recibos</strong>' + recibosHtml + '</div>'
-        + abonosHtml
         + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">'
-        + '<button class="btn-edit-action" onclick="Ventas.abrirAbono(' + index + ')" style="background:#dbeafe;color:#1e40af;padding:8px 16px;">💰 Abono</button>'
         + '<button class="btn-edit-action" onclick="abrirManagerRecibos(' + index + ')" style="background:#fef3c7;color:#92400e;padding:8px 16px;">📎 Recibos</button>'
         + '<button class="btn-edit-action" onclick="activarEdicionCliente(' + index + ');cerrarDetalleVenta();" style="padding:8px 16px;">✏️ Editar</button>'
         + '</div>'
