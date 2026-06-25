@@ -1154,6 +1154,7 @@ if (document.getElementById('form-cliente')) {
                 }
             });
 
+            var tasaGuardada = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
             clientes.push({
                 fechaRegistro: document.getElementById('cli-fecha-registro').value,
                 nombre: nombreCli,
@@ -1165,7 +1166,8 @@ if (document.getElementById('form-cliente')) {
                 pagado: parseFloat(document.getElementById('cli-pagado').value || 0),
                 pagadoBs: parseFloat(document.getElementById('cli-pagado-bs').value || 0),
                 fotoProducto: fotosAutodetectadas,
-                recibo: listaRecibosB64
+                recibo: listaRecibosB64,
+                tasa: tasaGuardada
             });
             actualizarSistema();
             window._expandirGrupoVenta = (nombreCli + '|' + document.getElementById('cli-telefono').value).toLowerCase();
@@ -1253,6 +1255,7 @@ if (document.getElementById('form-venta')) {
                 }
             });
 
+            var tasaGuardada = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
             clientes.push({
                 fechaRegistro: document.getElementById('venta-fecha-registro').value,
                 nombre: nombreCli,
@@ -1264,7 +1267,8 @@ if (document.getElementById('form-venta')) {
                 pagado: parseFloat(document.getElementById('venta-pagado').value || 0),
                 pagadoBs: parseFloat(document.getElementById('venta-pagado-bs').value || 0),
                 fotoProducto: fotosAutodetectadas,
-                recibo: listaRecibosB64
+                recibo: listaRecibosB64,
+                tasa: tasaGuardada
             });
             actualizarSistema();
             window._expandirGrupoVenta = (nombreCli + '|' + document.getElementById('venta-telefono').value).toLowerCase();
@@ -2084,8 +2088,9 @@ function abrirDetalleVenta(index) {
     var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : []);
     var cantidades = c.cantidades || [];
 
-    var tasa = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
-    var totalBs = c.totalBs || (tasa > 0 ? (c.total || 0) * tasa : 0);
+    var tasaActual = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
+    var totalBs = c.totalBs || (tasaActual > 0 ? (c.total || 0) * tasaActual : 0);
+    var tasaGuardada = c.tasa || (c.total > 0 ? ((c.totalBs || 0) / c.total) : 0);
 
     var statusColor = s.status === 'pagado' ? '#16a34a' : s.status === 'parcial' ? '#d97706' : '#ef4444';
     var statusLabel = s.status === 'pagado' ? '✅ Pagado' : s.status === 'parcial' ? '⚠️ Parcial' : '❌ Deuda';
@@ -2107,10 +2112,14 @@ function abrirDetalleVenta(index) {
     var recibosHtml = fotosRecibos.length > 0
         ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">'
             + fotosRecibos.map(function(img) {
-                return '<img src="' + img + '" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:2px solid #e2e8f0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.06);" onclick="window.open(\'' + img + '\')">';
+                return '<img src="' + img + '" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:2px solid #e2e8f0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.06);" onclick="ampliarImagen(\'' + img + '\')">';
             }).join('')
             + '</div>'
         : '<span style="color:#94a3b8;">Sin recibos</span>';
+
+    var tasaRow = tasaGuardada > 0
+        ? '<div><span style="color:#64748b;font-size:0.8rem;">Tasa aplicada</span><div style="font-weight:600;">Bs. ' + tasaGuardada.toFixed(2) + '</div></div>'
+        : '';
 
     document.getElementById('detalle-venta-titulo').innerText = 'Detalle de Venta - ' + c.nombre;
     document.getElementById('detalle-venta-body').innerHTML = '<div style="display:grid;gap:16px;">'
@@ -2123,6 +2132,7 @@ function abrirDetalleVenta(index) {
         + '<div><span style="color:#64748b;font-size:0.8rem;">Total Bs.</span><div>Bs. ' + totalBs.toFixed(2) + '</div></div>'
         + '<div><span style="color:#64748b;font-size:0.8rem;">Pagado</span><div style="color:#16a34a;font-weight:600;">$' + (c.pagado||0).toFixed(2) + '</div></div>'
         + '<div><span style="color:#64748b;font-size:0.8rem;">Deuda</span><div style="color:' + statusColor + ';font-weight:600;">$' + s.deuda.toFixed(2) + '</div></div>'
+        + tasaRow
         + '</div>'
         + '<div><strong style="color:#1e293b;">Productos</strong>' + productosHtml + '</div>'
         + '<div><strong style="color:#1e293b;">Recibos</strong>' + recibosHtml + '</div>'
@@ -2133,6 +2143,17 @@ function abrirDetalleVenta(index) {
         + '</div>';
 
     document.getElementById('detalle-venta-modal').style.display = 'flex';
+}
+
+function ampliarImagen(src) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+    overlay.onclick = function() { overlay.remove(); };
+    var img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.4);object-fit:contain;';
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
 }
 
 function cerrarDetalleVenta() {
