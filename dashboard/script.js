@@ -2107,7 +2107,7 @@ function abrirDetalleVenta(index) {
     var recibosHtml = fotosRecibos.length > 0
         ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">'
             + fotosRecibos.map(function(img) {
-                return '<img src="' + img + '" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.06);" onclick="window.open(\'' + img + '\')">';
+                return '<img src="' + img + '" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:2px solid #e2e8f0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.06);" onclick="window.open(\'' + img + '\')">';
             }).join('')
             + '</div>'
         : '<span style="color:#94a3b8;">Sin recibos</span>';
