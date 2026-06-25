@@ -1789,16 +1789,10 @@ window.eliminarClienteSimple = function(key) {
     var parts = key.split('|');
     var nombre = parts[0];
     var tel = parts[1];
-    if (!confirm('¿Eliminar todos los registros de "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Eliminar el perfil de "' + nombre + '" de la lista de clientes? Las ventas registradas en Ventas no se eliminarán.')) return;
 
-    // Eliminar de clientes[] (ventas)
-    for (var i = clientes.length - 1; i >= 0; i--) {
-        if (clientes[i].nombre === nombre && clientes[i].tel === tel) {
-            clientes.splice(i, 1);
-        }
-    }
-
-    // Eliminar de usuariosRegistrados
+    // Eliminar solo de usuariosRegistrados (perfil del cliente)
+    // Las ventas en clientes[] se conservan para la sección Ventas
     var usuarios = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
     var nuevos = usuarios.filter(function(u) { return !(u.nombre === nombre && u.tel === tel); });
     if (nuevos.length !== usuarios.length) localStorage.setItem('usuariosRegistrados', JSON.stringify(nuevos));
@@ -1807,7 +1801,7 @@ window.eliminarClienteSimple = function(key) {
     _clientesEditandoKey = null;
     renderizarClientesSimples();
     renderizarVentas();
-    mostrarToastNotificacion('Cliente eliminado');
+    mostrarToastNotificacion('Perfil de cliente eliminado');
 };
 
 function activarEdicionCliente(index) { abrirModalEdicionCliente(index); }
