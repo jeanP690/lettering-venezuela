@@ -1495,167 +1495,61 @@ function renderizarClientes() {
 function renderizarVentas() {
     const container = document.getElementById('ventas-table-container');
     if (!container) return;
-    var groups = buildVentaGroups();
-    var groupKeys = Object.keys(groups);
 
-    if (groupKeys.length === 0) {
+    var terminoBusqueda = (document.getElementById('buscar-venta')?.value.toLowerCase() || '').trim();
+    var filtered = [];
+    clientes.forEach(function(c, i) {
+        var sd = getStatusData(c);
+        if (_ventasFilter === 'paid' && sd.status !== 'pagado') return;
+        if (_ventasFilter === 'debt' && sd.status === 'pagado') return;
+        if (terminoBusqueda) {
+            var matchName = c.nombre.toLowerCase().includes(terminoBusqueda);
+            var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : []);
+            var matchProd = prods.some(function(p) { return p.toLowerCase().includes(terminoBusqueda); });
+            if (!matchName && !matchProd) return;
+        }
+        filtered.push({ index: i, data: c });
+    });
+
+    if (filtered.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">No se encontraron ventas.</div>';
         return;
     }
 
-    var html = '<div class="clientes-cards">';
+    filtered.sort(function(a, b) { return (b.data.fechaRegistro || '') < (a.data.fechaRegistro || '') ? -1 : 1; });
 
-    groupKeys.forEach(function(key, gi) {
-        var g = groups[key];
-        var totalCompras = 0;
-        var totalPagado = 0;
-        g.entries.forEach(function(e) {
-            totalCompras += e.data.total || 0;
-            totalPagado += e.data.pagado || 0;
-        });
-        var sd = getStatusData({ total: totalCompras, pagado: totalPagado });
-        var expanded = _ventasExpanded[gi] || false;
-        if (!expanded && window._expandirGrupoVenta && key === window._expandirGrupoVenta) {
-            expanded = true;
-            _ventasExpanded[gi] = true;
-        }
+    var html = '<div class="table-wrapper"><table class="modern-table"><thead><tr>'
+        + '<th>Fecha</th>'
+        + '<th>Cliente</th>'
+        + '<th>Productos</th>'
+        + '<th>Total</th>'
+        + '<th>Pagado</th>'
+        + '<th>Deuda</th>'
+        + '<th style="text-align:center;">Ver</th>'
+        + '</tr></thead><tbody>';
 
-        var statusLabel = sd.status === 'pagado' ? '✅ Pagado' : sd.status === 'parcial' ? '⚠️ Parcial' : '❌ Deuda';
-        var statusClass = sd.status === 'pagado' ? 'pagado' : sd.status === 'parcial' ? 'deuda-parcial' : 'deuda-total';
+    filtered.forEach(function(item) {
+        var c = item.data;
+        var s = getStatusData(c);
+        var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : ['—']);
+        var prodsStr = prods.slice(0, 2).join(', ') + (prods.length > 2 ? ' +' + (prods.length - 2) : '');
+        var statusColor = s.status === 'pagado' ? '#16a34a' : s.status === 'parcial' ? '#d97706' : '#ef4444';
+        var statusIcon = s.status === 'pagado' ? '✅' : s.status === 'parcial' ? '⚠️' : '❌';
+        var rowClass = s.status === 'pagado' ? 'tr-pagado' : s.status === 'deuda' ? 'tr-deuda' : 'tr-parcial';
 
-        html += '<div class="cliente-card">';
-        html += '<div class="cliente-card-header">';
-        html += '<div class="cliente-card-toggle' + (expanded ? ' open' : '') + '" onclick="Ventas.toggleGroup(' + gi + ')">▶</div>';
-        html += '<div class="cliente-card-info" onclick="Ventas.toggleGroup(' + gi + ')">';
-        html += '<div class="cliente-card-name">' + escapeHtml(g.nombre) + '</div>';
-        html += '<div class="cliente-card-contact">📞 ' + escapeHtml(g.tel) + ' · ' + g.entries.length + ' compra' + (g.entries.length !== 1 ? 's' : '') + '</div>';
-        html += '</div>';
-        html += '<div class="cliente-card-progress">';
-        html += renderProgressBar(sd);
-        html += '</div>';
-        html += '<div class="cliente-card-actions">';
-        html += '<button onclick="Ventas.abrirAbonoGrupo(' + gi + ')" class="btn-edit-action" style="background:#dbeafe;color:#1e40af;" title="Registrar abono">💰 Abono</button>';
-        html += '</div>';
-        html += '</div>';
-
-        if (expanded) {
-            html += '<div class="cliente-card-body">';
-
-            // Abono box (collapsible)
-            var abonosExisten = false;
-            g.entries.forEach(function(e) {
-                if (e.data.abonos && e.data.abonos.length > 0) abonosExisten = true;
-            });
-            if (abonosExisten || totalCompras > 0) {
-                var abonoBoxId = 'abono-box-' + gi;
-                html += '<div class="abono-box">';
-                html += '<div class="abono-box-title" onclick="Ventas.toggleAbonoBox(' + gi + ')" style="cursor:pointer;">💰 Resumen de Pagos <span style="margin-left:auto;font-size:0.7rem;color:#94a3b8;" id="abono-toggle-' + gi + '">▼</span></div>';
-                html += '<div class="abono-box-body" id="' + abonoBoxId + '">';
-                html += '<div class="abono-box-grid">';
-                html += '<div class="abono-box-item"><span class="abi-label">Total</span><span class="abi-value">$' + totalCompras.toFixed(2) + '</span></div>';
-                html += '<div class="abono-box-item"><span class="abi-label">Pagado</span><span class="abi-value paid">$' + totalPagado.toFixed(2) + '</span></div>';
-                html += '<div class="abono-box-item"><span class="abi-label">Deuda</span><span class="abi-value debt">$' + sd.deuda.toFixed(2) + '</span></div>';
-                var tasa_ = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
-                html += '<div class="abono-box-item"><span class="abi-label">Tasa del día</span><span class="abi-value">Bs. ' + tasa_.toFixed(2) + '</span></div>';
-                html += '</div>';
-
-                var allAbonos = [];
-                g.entries.forEach(function(e) {
-                    if (e.data.abonos) {
-                        e.data.abonos.forEach(function(a) {
-                            allAbonos.push({ fecha: a.fecha, usd: a.usd, bs: a.bs, tasa: a.tasa });
-                        });
-                    }
-                });
-                if (allAbonos.length > 0) {
-                    allAbonos.sort(function(a, b) { return a.fecha < b.fecha ? 1 : -1; });
-                    html += '<div class="abonos-historial">';
-                    html += '<div class="abonos-historial-title">Historial de pagos</div>';
-                    allAbonos.forEach(function(a) {
-                        html += '<div class="abono-entry">';
-                        html += '<span class="ae-fecha">' + (a.fecha || '—') + '</span>';
-                        html += '<span class="ae-usd">$' + (a.usd || 0).toFixed(2) + '</span>';
-                        html += '<span class="ae-bs">Bs. ' + (a.bs || 0).toFixed(2) + '</span>';
-                        html += '<span class="ae-tasa">@ ' + (a.tasa || 0).toFixed(2) + '</span>';
-                        html += '</div>';
-                    });
-                    html += '</div>';
-                }
-                html += '</div>'; // abono-box-body
-                html += '</div>'; // abono-box
-            }
-
-            html += '<table class="modern-table"><thead><tr>'
-                + '<th style="width:30px;"></th>'
-                + '<th>Fecha</th>'
-                + '<th>Producto + Foto</th>'
-                + '<th>Monto</th>'
-                + '<th>Recibos</th>'
-                + '<th style="text-align:center;width:60px;">Editar</th>'
-                + '</tr></thead><tbody>';
-
-            g.entries.forEach(function(e) {
-                var i = e.index;
-                var c = e.data;
-                var s = getStatusData(c);
-                var fotosProd = c.fotoProducto ? (Array.isArray(c.fotoProducto) ? c.fotoProducto : [c.fotoProducto]) : [];
-                var fotosRecibos = c.recibo ? (Array.isArray(c.recibo) ? c.recibo : [c.recibo]) : [];
-
-                var tasa = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
-                var totalBs = c.totalBs || (tasa > 0 ? (c.total || 0) * tasa : 0);
-
-                var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : ['—']);
-                var cantidades = c.cantidades || [];
-                var productoHtml = prods.map(function(p, idx) {
-                    var qty = cantidades[idx] || 1;
-                    var prodInv = inventario.find(function(ip) { return ip.nombre === p; });
-                    var fotoUrl = prodInv && prodInv.fotos && prodInv.fotos.length > 0 ? prodInv.fotos[0] : null;
-                    var fotoImg = fotoUrl ? '<img src="' + fotoUrl + '" class="cli-prod-thumb" alt="">' : '<div class="cli-prod-thumb cli-prod-thumb-placeholder">' + (p ? p.charAt(0).toUpperCase() : '—') + '</div>';
-                    return '<div class="cli-prod-cell" onclick="mostrarInfoProducto(\'' + escapeHtml(p) + '\')">' + fotoImg + '<span class="cli-prod-name">' + escapeHtml(p) + (qty > 1 ? ' <strong>x' + qty + '</strong>' : '') + '</span></div>';
-                }).join('');
-
-                var montoHtml = '<div style="white-space:nowrap;"><strong style="color:#1e293b;">$' + (c.total||0).toFixed(2) + '</strong>'
-                    + '<br><span style="color:#64748b;font-size:0.85rem;">Bs. ' + totalBs.toFixed(2) + '</span></div>';
-
-                var reciboRender = fotosRecibos.length > 0
-                    ? '<div class="mini-fotos-stack" onclick="abrirManagerRecibos(' + i + ')">' + fotosRecibos.slice(0, 2).map(function(img){return '<img src="' + img + '" class="img-preview-recibo">';}).join('') + (fotosRecibos.length > 2 ? '<span class="badge-mas-fotos">+' + (fotosRecibos.length-2) + '</span>' : '') + '</div>'
-                    : '<button class="btn-edit-action" onclick="abrirManagerRecibos(' + i + ')" style="font-size:0.75rem;">➕ Subir</button>';
-
-                var rowClass = s.status === 'pagado' ? 'tr-pagado' : s.status === 'deuda' ? 'tr-deuda' : 'tr-parcial';
-                html += '<tr class="' + rowClass + '">'
-                    + '<td></td>'
-                    + '<td><span style="font-size:0.85rem;color:#64748b;">' + (c.fechaRegistro||'—') + '</span></td>'
-                    + '<td>' + productoHtml + '</td>'
-                    + '<td>' + montoHtml + '</td>'
-                    + '<td>' + reciboRender + '</td>'
-                    + '<td style="text-align:center;"><button onclick="activarEdicionCliente(' + i + ')" class="btn-edit-action" style="padding:4px 10px;font-size:0.8rem;" title="Editar">✏️</button></td>'
-                    + '</tr>';
-
-                var abonos = c.abonos || [];
-                var statusColor = s.status === 'pagado' ? '#16a34a' : s.status === 'parcial' ? '#d97706' : '#ef4444';
-                var statusLabel = s.status === 'pagado' ? '✅ Pagado' : s.status === 'parcial' ? '⚠️ Parcial' : '❌ Deuda';
-
-                html += '<tr class="cli-pago-summary-row"><td colspan="6"><div class="cli-pago-summary">'
-                    + '<div class="cli-pago-bar">'
-                    + '<span class="cli-pago-badge" style="background:' + statusColor + ';">' + statusLabel + '</span>'
-                    + '<span class="cli-pago-amount"><strong>Total:</strong> $' + (c.total||0).toFixed(2) + '</span>'
-                    + '<span class="cli-pago-amount"><strong>Pagado:</strong> $' + (c.pagado||0).toFixed(2) + '</span>'
-                    + '<span class="cli-pago-amount"><strong>Deuda:</strong> $' + s.deuda.toFixed(2) + '</span>'
-                    + '<button class="btn-edit-action" onclick="Ventas.abrirAbono(' + i + ')" style="padding:4px 10px;font-size:0.8rem;background:#dbeafe;color:#1e40af;">💰 Abono</button>'
-                    + '</div>'
-                    + (abonos.length > 0 ? '<div class="cli-pago-abonos">' + abonos.map(function(a) { return '<span class="cli-pago-abono-entry">' + (a.fecha||'—') + ' · $' + (a.usd||0).toFixed(2) + (a.bs > 0 ? ' + Bs. ' + a.bs.toFixed(2) : '') + (a.tasa > 0 ? ' @ ' + a.tasa.toFixed(2) : '') + '</span>'; }).join('') + '</div>' : '')
-                    + '</div></td></tr>';
-            });
-
-            html += '</tbody></table>';
-            html += '</div>';
-        }
-        html += '</div>';
+        html += '<tr class="' + rowClass + '">'
+            + '<td><span style="font-size:0.85rem;color:#64748b;">' + (c.fechaRegistro || '—') + '</span></td>'
+            + '<td><strong>' + escapeHtml(c.nombre) + '</strong></td>'
+            + '<td><span style="font-size:0.85rem;">' + escapeHtml(prodsStr) + '</span></td>'
+            + '<td><strong>$' + (c.total || 0).toFixed(2) + '</strong></td>'
+            + '<td>$' + (c.pagado || 0).toFixed(2) + '</td>'
+            + '<td><span style="color:' + statusColor + ';font-weight:600;">' + statusIcon + ' $' + s.deuda.toFixed(2) + '</span></td>'
+            + '<td style="text-align:center;"><button class="btn-edit-action" onclick="abrirDetalleVenta(' + item.index + ')" style="padding:4px 10px;font-size:0.8rem;">🔍 Ver</button></td>'
+            + '</tr>';
     });
 
-    html += '</div>';
+    html += '</tbody></table></div>';
     container.innerHTML = html;
-    window._expandirGrupoVenta = null;
 }
 
 var _clientesEditandoKey = null;
@@ -2166,6 +2060,79 @@ function cerrarManagerRecibos() {
     document.getElementById('recibos-manager-modal').style.display = 'none';
     renderizarVentas();
     renderizarClientesSimples();
+}
+
+function abrirDetalleVenta(index) {
+    var c = clientes[index];
+    if (!c) return;
+    var s = getStatusData(c);
+    var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : []);
+    var cantidades = c.cantidades || [];
+
+    var tasa = (localStorage.getItem('modoTasa') === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'))) || 0;
+    var totalBs = c.totalBs || (tasa > 0 ? (c.total || 0) * tasa : 0);
+
+    var statusColor = s.status === 'pagado' ? '#16a34a' : s.status === 'parcial' ? '#d97706' : '#ef4444';
+    var statusLabel = s.status === 'pagado' ? '✅ Pagado' : s.status === 'parcial' ? '⚠️ Parcial' : '❌ Deuda';
+
+    var productosHtml = prods.map(function(p, idx) {
+        var qty = cantidades[idx] || 1;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9;">'
+            + '<span style="flex:1;">' + escapeHtml(p) + '</span>'
+            + '<span style="color:#64748b;">x' + qty + '</span>'
+            + '</div>';
+    }).join('');
+
+    var abonosHtml = '';
+    var abonos = c.abonos || [];
+    if (abonos.length > 0) {
+        abonosHtml = '<div style="margin-top:12px;"><strong style="color:#1e293b;">Historial de Abonos</strong></div>'
+            + abonos.map(function(a) {
+                return '<div style="display:flex;gap:12px;padding:4px 0;font-size:0.85rem;color:#475569;">'
+                    + '<span>' + (a.fecha || '—') + '</span>'
+                    + '<span>$' + (a.usd || 0).toFixed(2) + '</span>'
+                    + (a.bs > 0 ? '<span>Bs. ' + a.bs.toFixed(2) + '</span>' : '')
+                    + (a.tasa > 0 ? '<span style="color:#94a3b8;">@ ' + a.tasa.toFixed(2) + '</span>' : '')
+                    + '</div>';
+            }).join('');
+    }
+
+    var fotosRecibos = c.recibo ? (Array.isArray(c.recibo) ? c.recibo : [c.recibo]) : [];
+    var recibosHtml = fotosRecibos.length > 0
+        ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">'
+            + fotosRecibos.map(function(img) {
+                return '<img src="' + img + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;" onclick="window.open(\'' + img + '\')">';
+            }).join('')
+            + '</div>'
+        : '<span style="color:#94a3b8;">Sin recibos</span>';
+
+    document.getElementById('detalle-venta-titulo').innerText = 'Detalle de Venta - ' + c.nombre;
+    document.getElementById('detalle-venta-body').innerHTML = '<div style="display:grid;gap:16px;">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;padding:16px;border-radius:12px;">'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Cliente</span><div style="font-weight:600;">' + escapeHtml(c.nombre) + '</div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Teléfono</span><div>' + escapeHtml(c.tel || '—') + '</div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Fecha</span><div>' + (c.fechaRegistro || '—') + '</div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Estado</span><div><span style="background:' + statusColor + ';color:white;padding:2px 8px;border-radius:12px;font-size:0.8rem;">' + statusLabel + '</span></div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Total</span><div style="font-weight:700;font-size:1.1rem;">$' + (c.total||0).toFixed(2) + '</div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Total Bs.</span><div>Bs. ' + totalBs.toFixed(2) + '</div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Pagado</span><div style="color:#16a34a;font-weight:600;">$' + (c.pagado||0).toFixed(2) + '</div></div>'
+        + '<div><span style="color:#64748b;font-size:0.8rem;">Deuda</span><div style="color:' + statusColor + ';font-weight:600;">$' + s.deuda.toFixed(2) + '</div></div>'
+        + '</div>'
+        + '<div><strong style="color:#1e293b;">Productos</strong>' + productosHtml + '</div>'
+        + '<div><strong style="color:#1e293b;">Recibos</strong>' + recibosHtml + '</div>'
+        + abonosHtml
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">'
+        + '<button class="btn-edit-action" onclick="Ventas.abrirAbono(' + index + ')" style="background:#dbeafe;color:#1e40af;padding:8px 16px;">💰 Abono</button>'
+        + '<button class="btn-edit-action" onclick="abrirManagerRecibos(' + index + ')" style="background:#fef3c7;color:#92400e;padding:8px 16px;">📎 Recibos</button>'
+        + '<button class="btn-edit-action" onclick="activarEdicionCliente(' + index + ');cerrarDetalleVenta();" style="padding:8px 16px;">✏️ Editar</button>'
+        + '</div>'
+        + '</div>';
+
+    document.getElementById('detalle-venta-modal').style.display = 'flex';
+}
+
+function cerrarDetalleVenta() {
+    document.getElementById('detalle-venta-modal').style.display = 'none';
 }
 function recibosRefrescarModal() {
     const listaContenedor = document.getElementById('recibos-lista-miniaturas');
