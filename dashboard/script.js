@@ -1191,22 +1191,12 @@ if (document.getElementById('form-cliente-simple')) {
         var tel = document.getElementById('cli-telefono-simple').value.trim();
         var email = document.getElementById('cli-email-simple').value.trim();
         if (!nombre || !tel) { mostrarToastNotificacion('Complete nombre y teléfono', 'error'); return; }
-        var existe = clientes.some(function(c) { return c.nombre === nombre && c.tel === tel; });
-        if (existe) { mostrarToastNotificacion('Cliente ya registrado', 'error'); return; }
-        clientes.push({
-            fechaRegistro: new Date().toISOString().split('T')[0],
-            nombre: nombre,
-            tel: tel,
-            email: email || '',
-            productos: [],
-            cantidades: [],
-            total: 0,
-            totalBs: 0,
-            pagado: 0,
-            pagadoBs: 0,
-            fotoProducto: [],
-            recibo: []
-        });
+        var existeEnVentas = clientes.some(function(c) { return c.nombre === nombre && c.tel === tel; });
+        var usuariosExist = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
+        var existeEnWeb = usuariosExist.some(function(u) { return u.nombre === nombre && u.tel === tel; });
+        if (existeEnVentas || existeEnWeb) { mostrarToastNotificacion('Cliente ya registrado', 'error'); return; }
+        usuariosExist.push({ id: Date.now().toString(), nombre: nombre, tel: tel, email: email || '', fechaRegistro: new Date().toISOString() });
+        localStorage.setItem('usuariosRegistrados', JSON.stringify(usuariosExist));
         actualizarSistema();
         renderizarClientesSimples();
         e.target.reset();
