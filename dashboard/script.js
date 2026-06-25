@@ -636,8 +636,25 @@ function renderizarTabla() {
         let renderFotos = fotosArray.length > 0
             ? `<div class="mini-fotos-stack" onclick="abrirManagerFotosProducto(${i})">${fotosArray.slice(0, 2).map(img => `<img src="${img}" class="img-preview-recibo">`).join('')}${fotosArray.length > 2 ? `<span class="badge-mas-fotos">+${fotosArray.length - 2}</span>` : ''}</div>`
             : `<button class="btn-edit-action" onclick="abrirManagerFotosProducto(${i})" style="font-size:0.75rem;">📸 Subir</button>`;
-        return `<tr><td>${renderFotos}</td><td><strong>${p.nombre}</strong></td><td>${p.categoria||'—'}</td><td><span class="badge-producto">${p.marca||'—'}</span></td><td><span class="stock-marker ${p.cantidad <= 0 ? 'stock-rojo' : p.cantidad <= 5 ? 'stock-amarillo' : 'stock-verde'}">${p.cantidad}</span></td><td>$${p.precio.toFixed(2)}</td><td class="table-actions-cell" style="justify-content:center;"><button onclick="activarEdicionProducto(${i})" class="btn-edit-action">✏️ Editar</button></td></tr>`;
+        var imgUrl = fotosArray.length > 0 && fotosArray[0].startsWith('http') ? fotosArray[0] : null;
+        return `<tr><td>${renderFotos}</td><td><strong>${p.nombre}</strong></td><td>${p.categoria||'—'}</td><td><span class="badge-producto">${p.marca||'—'}</span></td><td><span class="stock-marker ${p.cantidad <= 0 ? 'stock-rojo' : p.cantidad <= 5 ? 'stock-amarillo' : 'stock-verde'}">${p.cantidad}</span></td><td>$${p.precio.toFixed(2)}</td><td class="table-actions-cell" style="justify-content:center;"><button onclick="activarEdicionProducto(${i})" class="btn-edit-action">✏️ Editar</button><button onclick="compartirProductoWhatsApp(${i})" class="btn-edit-action" style="background:#dcfce7;color:#16a34a;padding:6px 8px;">📤</button></td></tr>`;
     }).join('');
+}
+function compartirProductoWhatsApp(i) {
+    var p = inventario[i];
+    if (!p) return;
+    var num = document.getElementById('cfg-whatsapp')?.value || '584121234567';
+    var msg = '📦 *' + p.nombre + '*%0A';
+    msg += '💰 Precio: $' + p.precio.toFixed(2) + '%0A';
+    msg += '📁 Categoría: ' + (p.categoria || '—') + '%0A';
+    msg += '🏷️ Marca: ' + (p.marca || '—') + '%0A';
+    msg += '📦 Stock: ' + p.cantidad + ' unidades%0A';
+    if (p.fotos && p.fotos.length > 0) {
+        var imgUrl = p.fotos[0].startsWith('http') ? p.fotos[0] : null;
+        if (imgUrl) msg += '%0A🖼️ ' + imgUrl;
+    }
+    msg += '%0A%0A🔗 ' + window.location.origin + '/producto.html?id=' + encodeURIComponent(p.nombre);
+    window.open('https://wa.me/' + num.replace(/[^0-9]/g, '') + '?text=' + msg, '_blank');
 }
 function activarEdicionProducto(index) { productoEditandoIndex = index; renderizarTabla(); }
 function cancelarEdicionProducto() { productoEditandoIndex = null; renderizarTabla(); }
