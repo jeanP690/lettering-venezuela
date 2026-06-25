@@ -147,6 +147,7 @@ function actualizarDashboard() {
     if(document.getElementById('dash-prod-totales')) document.getElementById('dash-prod-totales').innerText = inventario.length;
     if(document.getElementById('dash-stock-total')) document.getElementById('dash-stock-total').innerText = inventario.reduce((acc, p) => acc + parseInt(p.cantidad || 0), 0);
     if(document.getElementById('dash-stock-escaso')) document.getElementById('dash-stock-escaso').innerText = inventario.filter(p => p.cantidad > 0 && p.cantidad <= 5).length;
+    if(document.getElementById('dash-stock-cero')) document.getElementById('dash-stock-cero').innerText = inventario.filter(p => p.cantidad <= 0).length;
     if(document.getElementById('dash-stock-vendido')) document.getElementById('dash-stock-vendido').innerText = historialVentas.reduce((acc, v) => acc + (v.items ? v.items.reduce((sum, i) => sum + i.cantidad, 0) : 0), 0);
     if(document.getElementById('dash-clientes')) document.getElementById('dash-clientes').innerText = clientes.length;
     if(document.getElementById('dash-total-vendido')) document.getElementById('dash-total-vendido').innerText = `$${clientes.reduce((a,b)=>a+parseFloat(b.total || 0),0).toFixed(2)}`;
