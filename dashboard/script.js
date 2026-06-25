@@ -1189,6 +1189,7 @@ if (document.getElementById('form-cliente-simple')) {
         e.preventDefault();
         var nombre = document.getElementById('cli-nombre-simple').value.trim();
         var tel = document.getElementById('cli-telefono-simple').value.trim();
+        var email = document.getElementById('cli-email-simple').value.trim();
         if (!nombre || !tel) { mostrarToastNotificacion('Complete nombre y teléfono', 'error'); return; }
         var existe = clientes.some(function(c) { return c.nombre === nombre && c.tel === tel; });
         if (existe) { mostrarToastNotificacion('Cliente ya registrado', 'error'); return; }
@@ -1196,6 +1197,7 @@ if (document.getElementById('form-cliente-simple')) {
             fechaRegistro: new Date().toISOString().split('T')[0],
             nombre: nombre,
             tel: tel,
+            email: email || '',
             productos: [],
             cantidades: [],
             total: 0,
@@ -1668,15 +1670,15 @@ function renderizarClientesSimples() {
     var terminoBusqueda = (document.getElementById('buscar-cliente-simple')?.value.toLowerCase() || '').trim();
     var groups = {};
     clientes.forEach(function(c, i) {
-        if (terminoBusqueda && !c.nombre.toLowerCase().includes(terminoBusqueda)) return;
+        if (terminoBusqueda && !c.nombre.toLowerCase().includes(terminoBusqueda) && !(c.email || '').toLowerCase().includes(terminoBusqueda)) return;
         var key = (c.nombre + '|' + c.tel).toLowerCase();
-        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, compras: 0, total: 0 };
+        if (!groups[key]) groups[key] = { nombre: c.nombre, tel: c.tel, email: c.email || '', compras: 0, total: 0 };
         groups[key].compras++;
         groups[key].total += c.total || 0;
     });
     var keys = Object.keys(groups);
     if (keys.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#94a3b8;">No se encontraron clientes.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#94a3b8;">No se encontraron clientes.</td></tr>';
         return;
     }
     tbody.innerHTML = keys.map(function(key) {
@@ -1684,6 +1686,7 @@ function renderizarClientesSimples() {
         return '<tr>'
             + '<td><strong>' + escapeHtml(g.nombre) + '</strong></td>'
             + '<td>📞 ' + escapeHtml(g.tel) + '</td>'
+            + '<td>' + (g.email ? '✉️ ' + escapeHtml(g.email) : '<span style="color:#94a3b8;">—</span>') + '</td>'
             + '<td>' + g.compras + ' compra' + (g.compras !== 1 ? 's' : '') + '</td>'
             + '<td><strong>$' + g.total.toFixed(2) + '</strong></td>'
             + '<td style="text-align:center;"><button class="btn-edit-action" onclick="cambiarAVentas(\'' + escapeHtml(key) + '\')" style="font-size:0.75rem;">💰 Ver ventas</button></td>'
