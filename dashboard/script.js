@@ -1687,16 +1687,18 @@ function renderizarVentas() {
     const container = document.getElementById('ventas-table-container');
     if (!container) return;
 
-    // Populate date list
+    // Populate date select
     var fechaCount = {};
     clientes.forEach(function(c) {
         var f = (c.fechaRegistro || '').split('T')[0];
         if (f) { fechaCount[f] = (fechaCount[f] || 0) + 1; }
     });
     var fechas = Object.keys(fechaCount).sort().reverse();
-    var datalist = document.getElementById('lista-fechas-ventas');
-    if (datalist) {
-        datalist.innerHTML = fechas.map(function(f) { return '<option value="' + f + '">'; }).join('');
+    var select = document.getElementById('filtro-fecha-venta');
+    if (select) {
+        var valActual = select.value;
+        select.innerHTML = '<option value="">Todas las fechas</option>'
+            + fechas.map(function(f) { return '<option value="' + f + '"' + (f === valActual ? ' selected' : '') + '>' + f + ' (' + fechaCount[f] + ')</option>'; }).join('');
     }
     var span = document.getElementById('dash-fechas-disponibles');
     if (span) {
@@ -2845,10 +2847,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (id === 'sec-config') cargarConfiguracion();
         if (id === 'sec-pedidos') renderizarPedidos();
         if (id === 'sec-ventas') {
-            var fechaInput = document.getElementById('filtro-fecha-venta');
-            if (fechaInput && !fechaInput.value) {
-                fechaInput.value = new Date().toISOString().split('T')[0];
-            }
             renderizarVentas();
         }
     };
