@@ -1743,7 +1743,7 @@ function renderizarVentas() {
         + '<th>Total</th>'
         + '<th>Pagado</th>'
         + '<th>Deuda</th>'
-        + '<th style="text-align:center;">Ver</th>'
+        + '<th style="text-align:center;">Acciones</th>'
         + '</tr></thead><tbody>';
 
     var lastDate = null;
@@ -1779,7 +1779,10 @@ function renderizarVentas() {
             + '<td><strong>$' + (c.total || 0).toFixed(2) + '</strong></td>'
             + '<td>$' + (c.pagado || 0).toFixed(2) + '</td>'
             + '<td><span style="color:' + statusColor + ';font-weight:600;">' + statusIcon + ' $' + s.deuda.toFixed(2) + '</span></td>'
-            + '<td style="text-align:center;"><button class="btn-edit-action" onclick="abrirDetalleVenta(' + item.index + ')" style="padding:4px 10px;font-size:0.8rem;">🔍 Ver</button></td>'
+            + '<td style="text-align:center;display:flex;gap:4px;justify-content:center;">'
+            + '<button class="btn-edit-action" onclick="abrirDetalleVenta(' + item.index + ')" style="padding:4px 10px;font-size:0.8rem;">🔍 Ver</button>'
+            + (s.status !== 'pagado' ? '<button class="btn-edit-action" onclick="Ventas.abrirAbono(' + item.index + ')" style="padding:4px 10px;font-size:0.8rem;background:#dbeafe;color:#1e40af;">💰 Abono</button>' : '')
+            + '</td>'
             + '</tr>';
     });
 
