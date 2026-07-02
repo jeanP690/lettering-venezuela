@@ -182,6 +182,12 @@ function actualizarDashboard() {
         const usuarios = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]');
         usuariosEl.innerText = usuarios.length;
     }
+    var tasaEl = document.getElementById('dash-tasa-dia');
+    if (tasaEl) {
+        var modo = localStorage.getItem('modoTasa');
+        var tasa = modo === 'auto' ? parseFloat(localStorage.getItem('tasaAuto')) : parseFloat(localStorage.getItem('tasaCambio'));
+        tasaEl.innerText = tasa > 0 ? 'Bs. ' + tasa.toFixed(2) : '—';
+    }
 }
 
 window.limpiarFormularioVenta = function() {
@@ -655,25 +661,8 @@ function renderizarTabla() {
         let renderFotos = fotosArray.length > 0
             ? `<div class="mini-fotos-stack" onclick="abrirManagerFotosProducto(${i})">${fotosArray.slice(0, 2).map(img => `<img src="${img}" class="img-preview-recibo">`).join('')}${fotosArray.length > 2 ? `<span class="badge-mas-fotos">+${fotosArray.length - 2}</span>` : ''}</div>`
             : `<button class="btn-edit-action" onclick="abrirManagerFotosProducto(${i})" style="font-size:0.75rem;">📸 Subir</button>`;
-        var imgUrl = fotosArray.length > 0 && fotosArray[0].startsWith('http') ? fotosArray[0] : null;
-        return `<tr><td>${renderFotos}</td><td><strong>${p.nombre}</strong></td><td>${p.categoria||'—'}</td><td><span class="badge-producto">${p.marca||'—'}</span></td><td><span class="stock-marker ${p.cantidad <= 0 ? 'stock-rojo' : p.cantidad <= 5 ? 'stock-amarillo' : 'stock-verde'}">${p.cantidad}</span></td><td>$${p.precio.toFixed(2)}</td><td class="table-actions-cell" style="justify-content:center;"><button onclick="activarEdicionProducto(${i})" class="btn-edit-action">✏️ Editar</button><button onclick="compartirProductoWhatsApp(${i})" class="btn-edit-action" style="background:#dcfce7;color:#16a34a;padding:6px 8px;">📤</button></td></tr>`;
+        return `<tr><td>${renderFotos}</td><td><strong>${p.nombre}</strong></td><td>${p.categoria||'—'}</td><td><span class="badge-producto">${p.marca||'—'}</span></td><td><span class="stock-marker ${p.cantidad <= 0 ? 'stock-rojo' : p.cantidad <= 5 ? 'stock-amarillo' : 'stock-verde'}">${p.cantidad}</span></td><td>$${p.precio.toFixed(2)}</td><td class="table-actions-cell" style="justify-content:center;"><button onclick="activarEdicionProducto(${i})" class="btn-edit-action">✏️ Editar</button></td></tr>`;
     }).join('');
-}
-function compartirProductoWhatsApp(i) {
-    var p = inventario[i];
-    if (!p) return;
-    var num = document.getElementById('cfg-whatsapp')?.value || '584121234567';
-    var msg = '📦 *' + p.nombre + '*%0A';
-    msg += '💰 Precio: $' + p.precio.toFixed(2) + '%0A';
-    msg += '📁 Categoría: ' + (p.categoria || '—') + '%0A';
-    msg += '🏷️ Marca: ' + (p.marca || '—') + '%0A';
-    msg += '📦 Stock: ' + p.cantidad + ' unidades%0A';
-    if (p.fotos && p.fotos.length > 0) {
-        var imgUrl = p.fotos[0].startsWith('http') ? p.fotos[0] : null;
-        if (imgUrl) msg += '%0A🖼️ ' + imgUrl;
-    }
-    msg += '%0A%0A🔗 ' + window.location.origin + '/producto.html?id=' + encodeURIComponent(p.nombre);
-    window.open('https://wa.me/' + num.replace(/[^0-9]/g, '') + '?text=' + msg, '_blank');
 }
 function activarEdicionProducto(index) { productoEditandoIndex = index; renderizarTabla(); }
 function cancelarEdicionProducto() { productoEditandoIndex = null; renderizarTabla(); }
@@ -1208,6 +1197,12 @@ if (document.getElementById('form-cliente')) {
                 recibo: listaRecibosB64,
                 tasa: tasaGuardada
             });
+            productos.forEach(function(prodName, pi) {
+                var prodInv = inventario.find(function(p) { return p.nombre === prodName; });
+                if (prodInv) {
+                    prodInv.cantidad = Math.max(0, (parseInt(prodInv.cantidad) || 0) - (cantidades[pi] || 1));
+                }
+            });
             actualizarSistema();
             window._expandirGrupoVenta = (nombreCli + '|' + document.getElementById('cli-telefono').value).toLowerCase();
             renderizarVentas();
@@ -1308,6 +1303,12 @@ if (document.getElementById('form-venta')) {
                 fotoProducto: fotosAutodetectadas,
                 recibo: listaRecibosB64,
                 tasa: tasaGuardada
+            });
+            productos.forEach(function(prodName, pi) {
+                var prodInv = inventario.find(function(p) { return p.nombre === prodName; });
+                if (prodInv) {
+                    prodInv.cantidad = Math.max(0, (parseInt(prodInv.cantidad) || 0) - (cantidades[pi] || 1));
+                }
             });
             actualizarSistema();
             window._expandirGrupoVenta = (nombreCli + '|' + document.getElementById('venta-telefono').value).toLowerCase();
@@ -1592,8 +1593,25 @@ function renderizarVentas() {
         + '<th style="text-align:center;">Ver</th>'
         + '</tr></thead><tbody>';
 
+    var lastDate = null;
     filtered.forEach(function(item) {
         var c = item.data;
+        var fechaKey = (c.fechaRegistro || '').split('T')[0];
+        if (fechaKey && fechaKey !== lastDate) {
+            lastDate = fechaKey;
+            try {
+                var d = new Date(fechaKey + 'T12:00:00');
+                var diaSemana = d.toLocaleDateString('es-ES', { weekday: 'long' });
+                var diaNum = d.toLocaleDateString('es-ES', { day: 'numeric' });
+                var mes = d.toLocaleDateString('es-ES', { month: 'long' });
+                var label = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1) + ' ' + diaNum + ' de ' + mes;
+                var hoy = new Date();
+                var ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+                if (fechaKey === hoy.toISOString().split('T')[0]) label = '📅 Hoy — ' + label;
+                else if (fechaKey === ayer.toISOString().split('T')[0]) label = '📅 Ayer — ' + label;
+                html += '<tr class="date-header-row"><td colspan="7" style="padding:10px 12px;background:#f1f5f9;font-weight:700;font-size:0.85rem;color:#1e293b;border-bottom:2px solid #e2e8f0;">' + label + '</td></tr>';
+            } catch(e) {}
+        }
         var s = getStatusData(c);
         var prods = Array.isArray(c.productos) ? c.productos : (c.productoVendido ? [c.productoVendido] : ['—']);
         var prodsStr = prods.slice(0, 2).join(', ') + (prods.length > 2 ? ' +' + (prods.length - 2) : '');
@@ -2439,6 +2457,12 @@ document.addEventListener('DOMContentLoaded', () => {
             origen: 'tienda-online',
             pedidoId: p.id,
             tasa: tasaActual
+        });
+        productosArr.forEach(function(prodName, pi) {
+            var prodInv = inventario.find(function(p) { return p.nombre === prodName; });
+            if (prodInv) {
+                prodInv.cantidad = Math.max(0, (parseInt(prodInv.cantidad) || 0) - (cantidadesArr[pi] || 1));
+            }
         });
         localStorage.setItem('clientes', JSON.stringify(clientes));
         localStorage.setItem('pedidosPendientes', JSON.stringify(pedidos));

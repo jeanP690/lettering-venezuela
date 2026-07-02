@@ -71,6 +71,7 @@ body {
 .card-ventas-totales { border-left: 5px solid #10b981; }
 .card-total-cobrado { border-left: 5px solid #22c55e; }
 .card-cuentas-cobrar { border-left: 5px solid #ef4444; }
+.card-tasa-dia { border-left: 5px solid #0ea5e9; }
 
 .stat-icon { 
     font-size: 2.6rem; 
@@ -1018,7 +1019,8 @@ form .file-upload-btn-recibo:hover {
     gap: 10px; 
     align-items: flex-start; 
     padding: 12px; 
-    min-height: 90px;
+    max-height: 220px;
+    overflow-y: auto;
     background: #f8fafc;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
@@ -1049,8 +1051,6 @@ form .file-upload-btn-recibo:hover {
     display: flex; 
     flex-wrap: wrap; 
     gap: 10px; 
-    max-height: 200px;
-    overflow-y: auto;
 }
 
 .img-manager-thumb { 
