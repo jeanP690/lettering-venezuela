@@ -147,7 +147,7 @@
             stockEl.innerHTML = '<span class="stock-badge ok">✅ ' + stock + ' disponibles</span>';
         }
 
-        document.getElementById('detalle-description').textContent = 'Producto de alta calidad' + (p.marca ? ' de la marca ' + p.marca : '') + ', ideal para tus proyectos de lettering y arte.';
+        document.getElementById('detalle-description').textContent = p.descripcion || ('Producto de alta calidad' + (p.marca ? ' de la marca ' + p.marca : '') + ', ideal para tus proyectos de lettering y arte.');
 
         document.getElementById('detalle-qty-input').value = 1;
 
@@ -171,6 +171,23 @@
         if (!currentProduct) return;
         if (!window.Cart) { console.error('addToCart: Cart no esta definido'); return; }
         var qty = parseInt(document.getElementById('detalle-qty-input').value, 10) || 1;
+        var stock = parseInt(currentProduct.cantidad) || 0;
+        if (stock <= 0) {
+            var btn = document.querySelector('.detalle-add-cart');
+            if (btn) {
+                btn.innerHTML = '❌ Sin stock';
+                btn.style.background = '#ef4444';
+                setTimeout(function () {
+                    btn.innerHTML = '🛒 Añadir al carrito';
+                    btn.style.background = '';
+                }, 1500);
+            }
+            return;
+        }
+        if (qty > stock) {
+            qty = stock;
+            document.getElementById('detalle-qty-input').value = stock;
+        }
         window.Cart.add(currentProduct, qty);
         var btn = document.querySelector('.detalle-add-cart');
         if (btn) {

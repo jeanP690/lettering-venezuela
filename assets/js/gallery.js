@@ -284,6 +284,19 @@
         var inventario = await getInventario();
         var p = inventario.find(function (i) { return i.nombre === nombre; });
         if (!p) return;
+        var stock = parseInt(p.cantidad) || 0;
+        if (stock <= 0) {
+            if (ev && ev.target) {
+                var btn = ev.target;
+                btn.textContent = '❌ Sin stock';
+                btn.style.background = '#ef4444';
+                setTimeout(function () {
+                    btn.textContent = '🛒 Anadir';
+                    btn.style.background = '';
+                }, 1500);
+            }
+            return;
+        }
         window.Cart.add(p, 1);
         if (ev && ev.target) {
             var btn = ev.target;

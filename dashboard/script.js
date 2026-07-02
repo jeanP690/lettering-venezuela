@@ -3,10 +3,69 @@ let inventario = JSON.parse(localStorage.getItem('inventario')) || [];
 let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
 let historialVentas = JSON.parse(localStorage.getItem('historialVentas')) || [];
 
+// === Dashboard Auth Gate ===
+(function() {
+    if (localStorage.getItem('dash_authenticated') === 'true') return;
+    var pass = localStorage.getItem('dash_pass');
+    if (!pass) {
+        if (!confirm('Este es tu primer ingreso. Haz clic en "Aceptar" para establecer una contraseña para el Dashboard. Cancelar para salir.')) {
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#64748b;">Acceso denegado.</div>';
+            return;
+        }
+    }
+    var overlay = document.createElement('div');
+    overlay.id = 'dash-auth-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#0f172a;z-index:999999;display:flex;align-items:center;justify-content:center;';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:white;border-radius:24px;padding:40px;max-width:400px;width:90%;box-shadow:0 25px 60px rgba(0,0,0,0.3);text-align:center;font-family:\'Plus Jakarta Sans\',sans-serif;';
+    if (!pass) {
+        card.innerHTML = '<div style="font-size:3rem;margin-bottom:8px;">🔐</div><h2 style="margin:0 0 12px;">Configurar Acceso</h2><p style="color:#64748b;margin:0 0 24px;font-size:0.9rem;">Establece una contraseña para proteger el Dashboard.</p><input type="password" id="dash-set-pass" placeholder="Nueva contraseña (mín. 4 caracteres)" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:12px;box-sizing:border-box;font-family:inherit;"><input type="password" id="dash-set-confirm" placeholder="Confirmar contraseña" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:20px;box-sizing:border-box;font-family:inherit;"><p id="dash-auth-error" style="color:#ef4444;font-size:0.85rem;margin:0 0 12px;display:none;"></p><button id="dash-auth-set-btn" style="width:100%;padding:14px;border:none;border-radius:12px;background:#6366f1;color:white;font-weight:700;font-size:1rem;cursor:pointer;font-family:inherit;">🔒 Establecer Contraseña</button>';
+    } else {
+        card.innerHTML = '<div style="font-size:3rem;margin-bottom:8px;">🔒</div><h2 style="margin:0 0 12px;">Dashboard Protegido</h2><p style="color:#64748b;margin:0 0 24px;font-size:0.9rem;">Ingresa tu contraseña para acceder.</p><input type="password" id="dash-login-pass" placeholder="Contraseña" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:20px;box-sizing:border-box;font-family:inherit;"><p id="dash-auth-error" style="color:#ef4444;font-size:0.85rem;margin:0 0 12px;display:none;"></p><button id="dash-auth-login-btn" style="width:100%;padding:14px;border:none;border-radius:12px;background:#6366f1;color:white;font-weight:700;font-size:1rem;cursor:pointer;font-family:inherit;">🔓 Ingresar</button>';
+    }
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    if (!pass) {
+        document.getElementById('dash-set-pass').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('dash-set-confirm').focus(); });
+        document.getElementById('dash-set-confirm').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('dash-auth-set-btn').click(); });
+        document.getElementById('dash-auth-set-btn').onclick = function() {
+            var p1 = document.getElementById('dash-set-pass').value;
+            var p2 = document.getElementById('dash-set-confirm').value;
+            var err = document.getElementById('dash-auth-error');
+            if (p1.length < 4) { err.textContent = 'Mínimo 4 caracteres'; err.style.display = 'block'; return; }
+            if (p1 !== p2) { err.textContent = 'Las contraseñas no coinciden'; err.style.display = 'block'; return; }
+            err.style.display = 'none';
+            localStorage.setItem('dash_pass', btoa(p1));
+            localStorage.setItem('dash_authenticated', 'true');
+            overlay.remove();
+        };
+    } else {
+        document.getElementById('dash-login-pass').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('dash-auth-login-btn').click(); });
+        document.getElementById('dash-auth-login-btn').onclick = function() {
+            var p = document.getElementById('dash-login-pass').value;
+            var err = document.getElementById('dash-auth-error');
+            if (btoa(p) === localStorage.getItem('dash_pass')) {
+                err.style.display = 'none';
+                localStorage.setItem('dash_authenticated', 'true');
+                overlay.remove();
+            } else {
+                err.textContent = 'Contraseña incorrecta';
+                err.style.display = 'block';
+            }
+        };
+    }
+})();
+
 // Dark mode init
 if (localStorage.getItem('darkMode') === 'true') {
     document.body.classList.add('dark-mode');
 }
+
+// Logout function
+window.logoutDashboard = function() {
+    localStorage.removeItem('dash_authenticated');
+    location.reload();
+};
 
 window.toggleDarkMode = function() {
     var on = document.body.classList.toggle('dark-mode');
@@ -558,6 +617,7 @@ if (document.getElementById('inv-form')) {
             marca: document.getElementById('marca-select').value,
             cantidad: parseInt(document.getElementById('cantidad').value),
             precio: parseFloat(document.getElementById('precio').value),
+            descripcion: document.getElementById('descripcion').value.trim(),
             fotos: listaB64 
         });
         actualizarSistema();
@@ -640,6 +700,7 @@ window.guardarProductosMultiples = async function() {
             marca: document.getElementById('multi-mar-' + id)?.value || '',
             cantidad: parseInt(document.getElementById('multi-cant-' + id)?.value || 0),
             precio: parseFloat(document.getElementById('multi-precio-' + id)?.value || 0),
+            descripcion: '',
             fotos: fotosB64
         });
         guardados++;
@@ -661,6 +722,7 @@ function renderizarTabla() {
         let fotosArray = p.fotos || [];
 
         if (productoEditandoIndex === i) {
+            var desc = escapeHtml(p.descripcion || '');
             return `
                 <tr class="editing-row">
                     <td>[Editando]</td>
@@ -673,6 +735,11 @@ function renderizarTabla() {
                         <button onclick="guardarEdicionProducto(${i})" class="btn-save">💾</button>
                         <button onclick="cancelarEdicionProducto()" class="btn-cancel">❌</button>
                         <button onclick="eliminarRegistro('inv', ${i})" class="btn-delete">🗑️</button>
+                    </td>
+                </tr>
+                <tr class="editing-desc-row">
+                    <td colspan="7" style="padding:4px 12px 12px;">
+                        <textarea id="edit-prod-desc-${i}" placeholder="Descripción (opcional)" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:0.85rem;min-height:50px;resize:vertical;box-sizing:border-box;">${desc}</textarea>
                     </td>
                 </tr>`;
         }
@@ -735,6 +802,8 @@ function guardarEdicionProducto(index) {
     inventario[index].marca = document.getElementById(`edit-prod-mar-${index}`).value;
     inventario[index].cantidad = parseInt(document.getElementById(`edit-prod-cant-${index}`).value);
     inventario[index].precio = parseFloat(document.getElementById(`edit-prod-prec-${index}`).value);
+    var descEl = document.getElementById(`edit-prod-desc-${index}`);
+    if (descEl) inventario[index].descripcion = descEl.value.trim();
     productoEditandoIndex = null;
     actualizarSistema();
     renderizarTabla();

@@ -22,6 +22,7 @@
             marca: row.brand_name || '',
             cantidad: row.quantity,
             precio: parseFloat(row.price),
+            descripcion: row.descripcion || '',
             fotos: row.photos || []
         };
     }
@@ -42,29 +43,38 @@
         if (!client) return [];
         var { data, error } = await client
             .from('products')
-            .select('id, name, quantity, price, created_at, categories:category_id(name), brands:brand_id(name)')
+            .select('id, name, descripcion, quantity, price, created_at, categories:category_id(name), brands:brand_id(name)')
             .order('name');
         if (error) { console.error('db.getProducts:', error); return []; }
         if (!data || data.length === 0) { console.log('db.getProducts: sin datos en Supabase'); return []; }
 
-        var result = [];
-        for (var i = 0; i < data.length; i++) {
-            var row = data[i];
-            var { data: photos } = await client
-                .from('product_photos')
-                .select('url')
-                .eq('product_id', row.id)
-                .order('sort_order');
-            result.push({
+        // Fetch all photos in a single query (fix N+1)
+        var ids = data.map(function (r) { return r.id; });
+        var { data: allPhotos, error: photoErr } = await client
+            .from('product_photos')
+            .select('product_id, url, sort_order')
+            .in('product_id', ids)
+            .order('sort_order');
+        if (photoErr) { console.error('db.getProducts photos:', photoErr); allPhotos = []; }
+
+        var photosByProduct = {};
+        (allPhotos || []).forEach(function (ph) {
+            if (!photosByProduct[ph.product_id]) photosByProduct[ph.product_id] = [];
+            photosByProduct[ph.product_id].push(ph.url);
+        });
+
+        var result = data.map(function (row) {
+            return {
                 id: row.id,
                 nombre: row.name,
+                descripcion: row.descripcion || '',
                 categoria: row.categories ? row.categories.name : '',
                 marca: row.brands ? row.brands.name : '',
                 cantidad: row.quantity,
                 precio: parseFloat(row.price),
-                fotos: (photos || []).map(function (p) { return p.url; })
-            });
-        }
+                fotos: photosByProduct[row.id] || []
+            };
+        });
         return result;
     }
 
@@ -92,6 +102,7 @@
             marca: data.brands ? data.brands.name : '',
             cantidad: data.quantity,
             precio: parseFloat(data.price),
+            descripcion: data.descripcion || '',
             fotos: (photos || []).map(function (p) { return p.url; })
         };
     }
