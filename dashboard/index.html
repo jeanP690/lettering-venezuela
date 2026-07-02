@@ -27,6 +27,7 @@
                 <button class="menu-item" onclick="mostrarSeccion('sec-productos')">📦 Productos</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-pedidos')">🛒 Pedidos</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-config')">⚙️ Configuración</button>
+                <button class="menu-item" onclick="toggleDarkMode()" style="margin-top:auto;border-top:1px solid var(--border-light);padding-top:16px;">🌙 Modo Oscuro</button>
             </nav>
         </aside>
 
@@ -279,6 +280,7 @@
                             <input type="date" id="filtro-fecha-venta" class="table-input-compact" list="lista-fechas-ventas" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-darker);font-family:inherit;font-size:0.85rem;" onchange="renderizarVentas()">
                             <datalist id="lista-fechas-ventas"></datalist>
                             <button onclick="limpiarFiltroFechaVenta()" class="btn-edit-action" style="padding:4px 10px;font-size:0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;">📋 Todas</button>
+                            <button onclick="exportarVentasCSV()" class="btn-edit-action" style="padding:4px 10px;font-size:0.75rem;background:#dcfce7;border:1px solid #bbf7d0;color:#16a34a;">📥 Exportar</button>
                             <span id="dash-fechas-disponibles" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
                         </div>
                     </div>
@@ -419,10 +421,14 @@
                         </div>
 
                         <div class="table-container-flex">
-                            <div class="search-container">
-                                <input type="text" id="buscar-prod-nombre" placeholder="🔍 Buscar por nombre, marca o categoría..." oninput="renderizarTabla()">
+                            <div class="clientes-filter-bar" style="gap:8px;">
+                                <div class="search-container" style="margin:0;flex:1;">
+                                    <input type="text" id="buscar-prod-nombre" placeholder="🔍 Buscar por nombre, marca o categoría..." oninput="renderizarTabla()">
+                                </div>
+                                <button onclick="exportarInventarioCSV()" class="btn-edit-action" style="padding:6px 12px;font-size:0.75rem;background:#dcfce7;border:1px solid #bbf7d0;color:#16a34a;">📥 Exportar</button>
+                                <button onclick="toggleVistaInventario()" class="btn-edit-action" id="btn-vista-inventario" style="padding:6px 12px;font-size:0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;">📇 Tarjetas</button>
                             </div>
-                            <div class="table-wrapper text-scrollable">
+                            <div class="table-wrapper text-scrollable" id="inventario-table-wrapper">
                                 <table class="modern-table">
                                     <thead>
                                         <tr>
@@ -438,6 +444,7 @@
                                     <tbody id="tabla-cuerpo"></tbody>
                                 </table>
                             </div>
+                            <div id="inventario-card-view" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
@@ -545,6 +552,13 @@
                         <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">Migra tus datos existentes desde localStorage a Supabase. Esto incluye productos, categorías y marcas.</p>
                         <button type="button" class="btn-primary" onclick="migrarDatosALaNube()" id="btn-migrar" style="background:#6366f1;display:inline-flex;align-items:center;gap:6px;">☁️ Migrar datos a Supabase</button>
                         <p id="migracion-status" style="margin-top:8px;color:#64748b;font-size:0.85rem;"></p>
+                        <button type="button" onclick="migrarImagenesANube()" class="btn-edit-action" style="margin-top:8px;padding:8px 16px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;">🖼️ Migrar imágenes a Supabase</button>
+                        <hr style="margin:20px 0;border-color:#e2e8f0;">
+                    </div>
+                    <div class="form-container">
+                        <h2>Historial de Cambios en Inventario</h2>
+                        <div id="stock-log-container" style="max-height:200px;overflow-y:auto;font-size:0.8rem;color:#64748b;"></div>
+                        <button type="button" onclick="renderizarStockLog()" class="btn-edit-action" style="margin-top:8px;padding:6px 14px;">📋 Ver cambios</button>
                         <hr style="margin:20px 0;border-color:#e2e8f0;">
                     </div>
                     <div class="form-container">
