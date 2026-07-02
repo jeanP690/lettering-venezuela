@@ -21,7 +21,7 @@ let historialVentas = JSON.parse(localStorage.getItem('historialVentas')) || [];
     if (!pass) {
         card.innerHTML = '<div style="font-size:3rem;margin-bottom:8px;">🔐</div><h2 style="margin:0 0 12px;">Configurar Acceso</h2><p style="color:#64748b;margin:0 0 24px;font-size:0.9rem;">Establece una contraseña para proteger el Dashboard.</p><input type="password" id="dash-set-pass" placeholder="Nueva contraseña (mín. 4 caracteres)" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:12px;box-sizing:border-box;font-family:inherit;"><input type="password" id="dash-set-confirm" placeholder="Confirmar contraseña" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:20px;box-sizing:border-box;font-family:inherit;"><p id="dash-auth-error" style="color:#ef4444;font-size:0.85rem;margin:0 0 12px;display:none;"></p><button id="dash-auth-set-btn" style="width:100%;padding:14px;border:none;border-radius:12px;background:#6366f1;color:white;font-weight:700;font-size:1rem;cursor:pointer;font-family:inherit;">🔒 Establecer Contraseña</button>';
     } else {
-        card.innerHTML = '<div style="font-size:3rem;margin-bottom:8px;">🔒</div><h2 style="margin:0 0 12px;">Dashboard Protegido</h2><p style="color:#64748b;margin:0 0 24px;font-size:0.9rem;">Ingresa tu contraseña para acceder.</p><input type="password" id="dash-login-pass" placeholder="Contraseña" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:20px;box-sizing:border-box;font-family:inherit;"><p id="dash-auth-error" style="color:#ef4444;font-size:0.85rem;margin:0 0 12px;display:none;"></p><button id="dash-auth-login-btn" style="width:100%;padding:14px;border:none;border-radius:12px;background:#6366f1;color:white;font-weight:700;font-size:1rem;cursor:pointer;font-family:inherit;">🔓 Ingresar</button>';
+        card.innerHTML = '<div style="font-size:3rem;margin-bottom:8px;">🔒</div><h2 style="margin:0 0 12px;">Dashboard Protegido</h2><p style="color:#64748b;margin:0 0 24px;font-size:0.9rem;">Ingresa tu contraseña para acceder.</p><input type="password" id="dash-login-pass" placeholder="Contraseña" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:12px;box-sizing:border-box;font-family:inherit;"><p id="dash-auth-error" style="color:#ef4444;font-size:0.85rem;margin:0 0 12px;display:none;"></p><button id="dash-auth-login-btn" style="width:100%;padding:14px;border:none;border-radius:12px;background:#6366f1;color:white;font-weight:700;font-size:1rem;cursor:pointer;font-family:inherit;">🔓 Ingresar</button><p style="margin-top:16px;font-size:0.8rem;"><a href="#" id="dash-auth-reset" style="color:#94a3b8;text-decoration:none;" onclick="return false;">¿Olvidaste tu contraseña? Restablecer acceso</a></p>';
     }
     overlay.appendChild(card);
     document.body.appendChild(overlay);
@@ -53,6 +53,17 @@ let historialVentas = JSON.parse(localStorage.getItem('historialVentas')) || [];
                 err.style.display = 'block';
             }
         };
+        var resetLink = document.getElementById('dash-auth-reset');
+        if (resetLink) {
+            resetLink.onclick = function(e) {
+                e.preventDefault();
+                if (confirm('¿Restablecer acceso al Dashboard? Se borrará la contraseña actual y podrás configurar una nueva.')) {
+                    localStorage.removeItem('dash_pass');
+                    localStorage.removeItem('dash_authenticated');
+                    location.reload();
+                }
+            };
+        }
     }
 })();
 
