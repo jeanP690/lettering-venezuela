@@ -2965,4 +2965,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 + '<br><span style="font-size:0.7rem;color:#94a3b8;">' + fechaStr + '</span></div>';
         }).join('');
     };
+
+    // Auto-actualizar tasa cada 24h
+    (function() {
+        if (localStorage.getItem('modoTasa') === 'auto') {
+            var ultima = localStorage.getItem('ultimaActualizacionTasa');
+            var necesita = true;
+            if (ultima) {
+                try {
+                    var diffHoras = (Date.now() - new Date(ultima).getTime()) / 3600000;
+                    if (diffHoras < 24) necesita = false;
+                } catch(e) {}
+            }
+            if (necesita && typeof window.actualizarTasaAuto === 'function') {
+                setTimeout(window.actualizarTasaAuto, 1000);
+            }
+        }
+    })();
 });
