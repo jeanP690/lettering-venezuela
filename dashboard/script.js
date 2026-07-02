@@ -1,7 +1,6 @@
 // 1. ESTADO GLOBAL (RECUPERADO DESDE LOCALSTORAGE)
 let inventario = JSON.parse(localStorage.getItem('inventario')) || [];
 let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-let historialVentas = JSON.parse(localStorage.getItem('historialVentas')) || [];
 
 // === Dashboard Auth Gate ===
 (function() {
@@ -256,7 +255,12 @@ function actualizarDashboard() {
     if(document.getElementById('dash-stock-total')) document.getElementById('dash-stock-total').innerText = inventario.reduce((acc, p) => acc + parseInt(p.cantidad || 0), 0);
     if(document.getElementById('dash-stock-escaso')) document.getElementById('dash-stock-escaso').innerText = inventario.filter(p => p.cantidad > 0 && p.cantidad <= 5).length;
     if(document.getElementById('dash-stock-cero')) document.getElementById('dash-stock-cero').innerText = inventario.filter(p => p.cantidad <= 0).length;
-    if(document.getElementById('dash-stock-vendido')) document.getElementById('dash-stock-vendido').innerText = historialVentas.reduce((acc, v) => acc + (v.items ? v.items.reduce((sum, i) => sum + i.cantidad, 0) : 0), 0);
+    if(document.getElementById('dash-stock-vendido')) document.getElementById('dash-stock-vendido').innerText = clientes.reduce(function(acc, v) {
+        var cants = Array.isArray(v.cantidades) ? v.cantidades : [];
+        if (cants.length > 0) return acc + cants.reduce(function(s, c) { return s + (parseInt(c) || 1); }, 0);
+        var prods = Array.isArray(v.productos) ? v.productos : (v.productoVendido ? [v.productoVendido] : []);
+        return acc + prods.length;
+    }, 0);
     if(document.getElementById('dash-clientes')) document.getElementById('dash-clientes').innerText = clientes.length;
     if(document.getElementById('dash-total-vendido')) document.getElementById('dash-total-vendido').innerText = `$${clientes.reduce((a,b)=>a+parseFloat(b.total || 0),0).toFixed(2)}`;
     if(document.getElementById('dash-total-pagado')) document.getElementById('dash-total-pagado').innerText = `$${clientes.reduce((a,b)=>a+parseFloat(b.pagado || 0),0).toFixed(2)}`;
@@ -2477,7 +2481,7 @@ async function recibosAgregarMasFotosNuevas(event) {
 function actualizarSistema() {
     localStorage.setItem('inventario', JSON.stringify(inventario));
     localStorage.setItem('clientes', JSON.stringify(clientes));
-    localStorage.setItem('historialVentas', JSON.stringify(historialVentas));
+
     localStorage.setItem('categoriasObj', JSON.stringify(categories));
     localStorage.setItem('marcasObj', JSON.stringify(marcas));
     actualizarDashboard();
