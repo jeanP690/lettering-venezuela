@@ -42,7 +42,7 @@
                 if (prods && prods.length > 0) return prods.filter(function (p) { return p && p.nombre; });
             } catch (e) { /* fallback */ }
         }
-        return safeArray(localStorage.getItem('inventario')).filter(function (p) { return p && typeof p === 'object' && p.nombre; });
+        return safeArray(localStorage.getItem('inventario')).filter(function (p) { return p && typeof p === 'object' && p.nombre && p.activo !== false; });
     }
 
     async function getCategorias() {
@@ -80,7 +80,7 @@
         } catch (e) {}
     }
 
-    function escapeHtml(s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    var escapeHtml = window.escapeHtml || function (s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
     function safeCurrency(fn, fallback) {
         return window.Currency && typeof window.Currency[fn] === 'function' ? window.Currency[fn]() : fallback;
@@ -111,7 +111,7 @@
             + '<div class=\"producto-card-actions\">' + actionsHtml + '</div></div></div></div>';
     }
 
-    function escapeAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
+    var escapeAttr = window.escapeAttr || function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
 
     async function renderCarousel() {
         var track = document.getElementById('home-carousel-track');
@@ -301,5 +301,17 @@
             }, 150);
         });
         setTimeout(startAutoplay, 1000);
+
+        // Re-render when Supabase data arrives (if different from localStorage)
+        if (window.DB && typeof window.DB.onDataLoaded === 'function') {
+            window.DB.onDataLoaded(function(success) {
+                if (success) {
+                    renderCarousel();
+                    renderCategorias();
+                    renderMarcas();
+                }
+            });
+        }
     });
+
 })();

@@ -2,9 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' data: https://*.supabase.co https://ve.dolarapi.com;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Detalle del producto - lettering venezuela">
-    <title>lettering venezuela</title>
+    <meta name="description" content="Detalle del producto - Lettering Venezuela">
+    <meta property="og:title" content="Lettering Venezuela - Producto">
+    <meta property="og:url" content="https://letteringvenezuela.com/productos/detalle.html">
+    <meta property="og:image" content="https://zufcrtwiifbguryjjirv.supabase.co/storage/v1/object/public/lettering/lettering-icon.png">
+    <meta property="og:type" content="product">
+    <title>Lettering Venezuela - Producto</title>
     <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
     <link rel="stylesheet" href="../assets/css/base.css">
     <link rel="stylesheet" href="../assets/css/layout.css">
@@ -33,7 +38,7 @@
                 <div class="detalle-grid">
                     <div class="detalle-gallery" id="detalle-gallery">
                         <div class="detalle-main-image" id="detalle-main-image">
-                            <img id="detalle-img-main" src="" alt="">
+                            <img id="detalle-img-main" src="" alt="" loading="lazy">
                             <div class="detalle-img-placeholder" id="detalle-img-placeholder">📦</div>
                         </div>
                         <div class="detalle-thumbs" id="detalle-thumbs"></div>
@@ -64,6 +69,8 @@
                             🛒 Añadir al carrito
                         </button>
 
+                        <button class="detalle-share" onclick="ProductoDetalle.shareProduct()" style="margin-top:8px;width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:12px;background:white;color:#64748b;font-weight:600;font-size:0.9rem;cursor:pointer;font-family:inherit;">🔗 Compartir producto</button>
+
                         <div class="detalle-description">
                             <h3>Descripción</h3>
                             <p id="detalle-description"></p>
@@ -83,11 +90,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/lib/supabase.js?v=2"></script>
+    <script src="../assets/js/lib/helpers.js?v=2"></script>
     <script src="../assets/js/db.js?v=2"></script>
     <script src="../assets/js/upload.js?v=2"></script>
     <script src="../assets/js/currency.js?v=2"></script>
-    <script src="../assets/js/cart-v2.js"></script>
     <script src="../assets/js/users.js?v=2"></script>
+    <script src="../assets/js/cart-v2.js?v=2"></script>
     <script src="../assets/js/layout.js?v=2"></script>
     <script src="../assets/js/producto-detalle.js?v=2"></script>
 </body>

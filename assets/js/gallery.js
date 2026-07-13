@@ -22,7 +22,7 @@
                 if (data && data.length > 0) return data;
             } catch (e) { /* fallback */ }
         }
-        try { return JSON.parse(localStorage.getItem('inventario')) || []; } catch (e) { return []; }
+        try { var arr = JSON.parse(localStorage.getItem('inventario')) || []; return arr.filter(function (p) { return p.activo !== false; }); } catch (e) { return []; }
     }
 
     async function getCategorias() {
@@ -68,12 +68,12 @@
         return parseFloat(usd || 0) * 36.5;
     }
 
-    function escapeHtml(s) {
+    var escapeHtml = window.escapeHtml || function (s) {
         return String(s || '').replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
-    }
-    function escapeAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
+    };
+    var escapeAttr = window.escapeAttr || function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
 
     function normalize(s) {
         return String(s || '')

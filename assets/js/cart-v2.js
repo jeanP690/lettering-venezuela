@@ -1,19 +1,33 @@
 (function () {
     'use strict';
-    console.log('[Cart] Loading cart.js');
     var KEY = 'carrito';
+
+    function safeFormatUSD(val) {
+        if (window.Currency && typeof window.Currency.formatUSD === 'function') return window.Currency.formatUSD(val);
+        return '$' + (val || 0).toFixed(2);
+    }
+    function safeFormatBS(val) {
+        if (window.Currency && typeof window.Currency.formatBS === 'function') return window.Currency.formatBS(val);
+        return 'Bs. ' + (val || 0).toFixed(2);
+    }
 
     function getCart() {
         try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
     }
 
     function saveCart(cart) {
-        localStorage.setItem(KEY, JSON.stringify(cart));
+        try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+                if (window.Users && typeof window.Users.showToast === 'function') {
+                    window.Users.showToast('⚠️ Espacio insuficiente en el almacenamiento.', 'error');
+                } else { alert('⚠️ Espacio insuficiente en el almacenamiento.'); }
+            }
+        }
         document.dispatchEvent(new CustomEvent('carritoCambiado'));
     }
 
     function getInventario() {
-        try { return JSON.parse(localStorage.getItem('inventario')) || []; } catch (e) { return []; }
+        try { var arr = JSON.parse(localStorage.getItem('inventario')) || []; return arr.filter(function (p) { return p.activo !== false; }); } catch (e) { return []; }
     }
 
     function addToCart(product, qty) {
@@ -55,6 +69,7 @@
                 nombre: product.nombre,
                 precio: parseFloat(product.precio) || 0,
                 cantidad: qty,
+                codigo: product.codigo || '',
                 foto: (product.fotos && product.fotos[0]) || '',
                 categoria: product.categoria || '',
                 marca: product.marca || ''
@@ -75,10 +90,15 @@
         if (item) { item.cantidad = cantidad; saveCart(cart); }
     }
 
-    function clearCart() { saveCart([]); }
+    function clearCart(silent) {
+        if (!silent) {
+            if (!confirm('¿Vaciar carrito? Todos los productos serán eliminados.')) return;
+        }
+        saveCart([]);
+    }
     function getCount() { return getCart().reduce(function (acc, i) { return acc + i.cantidad; }, 0); }
     function getTotalUSD() { return getCart().reduce(function (acc, i) { return acc + (i.precio * i.cantidad); }, 0); }
-    function getTotalBS() { return window.Currency ? window.Currency.usdToBs(getTotalUSD()) : 0; }
+    function getTotalBS() { return window.Currency && typeof window.Currency.usdToBs === 'function' ? window.Currency.usdToBs(getTotalUSD()) : 0; }
 
     function updateCartBadge() {
         var badge = document.getElementById('cart-count');
@@ -97,17 +117,17 @@
             container.innerHTML = cart.map(function (i) {
                 var foto = i.foto || '';
                 var imgHtml = foto ? '<img src=\"' + escapeAttr(foto) + '\" alt=\"' + escapeHtml(i.nombre) + '\">' : '<div class=\"cart-item-img-placeholder\" aria-label=\"' + escapeHtml(i.nombre) + '\"></div>';
-                return '<div class=\"cart-item\">' + imgHtml + '<div class=\"cart-item-info\"><p class=\"cart-item-name\">' + escapeHtml(i.nombre) + '</p><p class=\"cart-item-price\">' + window.Currency.formatUSD(i.precio) + '</p></div><div class=\"cart-item-qty\"><button onclick=\"Cart.update(\'' + escapeAttr(i.nombre) + "', " + (i.cantidad - 1) + ')\" aria-label=\"Restar\">-</button><span>' + i.cantidad + '</span><button onclick=\"Cart.update(\'' + escapeAttr(i.nombre) + "', " + (i.cantidad + 1) + ')\" aria-label=\"Sumar\">+</button></div></div>';
+                return '<div class=\"cart-item\">' + imgHtml + '<div class=\"cart-item-info\"><p class=\"cart-item-name\">' + escapeHtml(i.nombre) + '</p><p class=\"cart-item-price\">' + safeFormatUSD(i.precio) + '</p></div><div class=\"cart-item-qty\"><button onclick=\"Cart.update(\'' + escapeAttr(i.nombre) + "', " + (i.cantidad - 1) + ')\" aria-label=\"Restar\">-</button><span>' + i.cantidad + '</span><button onclick=\"Cart.update(\'' + escapeAttr(i.nombre) + "', " + (i.cantidad + 1) + ')\" aria-label=\"Sumar\">+</button></div></div>';
             }).join('');
         }
         var usdEl = document.getElementById('cart-total-usd');
         var bsEl = document.getElementById('cart-total-bs');
-        if (usdEl) usdEl.textContent = window.Currency.formatUSD(getTotalUSD());
-        if (bsEl) bsEl.textContent = window.Currency.formatBS(getTotalBS());
+        if (usdEl) usdEl.textContent = safeFormatUSD(getTotalUSD());
+        if (bsEl) bsEl.textContent = safeFormatBS(getTotalBS());
     }
 
-    function escapeHtml(s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-    function escapeAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
+    var escapeHtml = window.escapeHtml || function (s) { return String(s || '').replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var escapeAttr = window.escapeAttr || function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
 
     function openCart() {
         renderCartPanel();
@@ -169,6 +189,13 @@
         var user = null;
         try { if (window.Users && typeof window.Users.isLoggedIn === 'function' && window.Users.isLoggedIn()) user = window.Users.getCurrent(); } catch (e) { user = null; }
 
+        var telNormalizado = '';
+        if (user && user.tel) {
+            telNormalizado = user.tel.replace(/[^0-9]/g, '');
+            if (telNormalizado.indexOf('0') === 0) telNormalizado = '58' + telNormalizado.substring(1);
+            else if (telNormalizado.indexOf('58') !== 0) telNormalizado = '58' + telNormalizado;
+        }
+
         var pedido = {
             id: 'PED-' + Date.now(),
             fecha: new Date().toISOString().slice(0, 10),
@@ -176,13 +203,13 @@
             items: cart,
             totalUSD: getTotalUSD(),
             totalBS: getTotalBS(),
-            estado: 'pendiente'
+            estado: 'pendiente',
+            userNombre: user ? user.nombre || '' : '',
+            userTel: telNormalizado
         };
-        if (user) {
+        if (user && user.id) {
             pedido.userId = user.id;
-            pedido.userEmail = user.email;
-            pedido.userNombre = user.nombre;
-            pedido.userTel = user.tel;
+            pedido.userEmail = user.email || '';
         }
 
         // Try Supabase
@@ -190,10 +217,10 @@
             try {
                 await window.DB.saveOrder({
                     order_id: pedido.id,
-                    user_id: user ? user.id : null,
-                    user_email: user ? user.email : '',
-                    user_name: user ? user.nombre : '',
-                    user_phone: user ? user.tel : '',
+                    user_id: pedido.userId || null,
+                    user_email: pedido.userEmail || '',
+                    user_name: pedido.userNombre,
+                    user_phone: pedido.userTel,
                     items_json: JSON.stringify(cart),
                     total_usd: pedido.totalUSD,
                     total_bs: pedido.totalBS,
@@ -207,21 +234,16 @@
         pedidos.push(pedido);
         localStorage.setItem('pedidosPendientes', JSON.stringify(pedidos));
 
-        // Show checkout confirmation modal first
-        var msg = '🛍️ *Nuevo Pedido* (' + pedido.id + ')%0A%0A';
-        msg += '*Productos:*%0A';
-        cart.forEach(function (item, i) {
-            var q = item.cantidad || item.quantity || 1;
-            var p = item.precio || item.price || 0;
-            var n = item.nombre || item.name || 'Producto';
-            msg += (i + 1) + '. ' + n + ' x' + q + ' = $' + (p * q).toFixed(2) + '%0A';
-        });
-        msg += '%0A*Total: $' + pedido.totalUSD.toFixed(2) + '*';
-        if (pedido.totalBS > 0) msg += ' (%0ABs. ' + pedido.totalBS.toFixed(2) + ')';
-        msg += '%0A%0A*Cliente:* ' + (user ? user.nombre || 'Sin registrar' : 'Sin registrar');
-        if (user && user.tel) msg += '%0A*Tel:* ' + user.tel;
-        if (user && user.email) msg += '%0A*Email:* ' + user.email;
-        msg += '%0A%0A¡Gracias por tu pedido! 🎉';
+        // Build short link to order summary page
+        var baseUrl = window.LETTERING_BASE || '';
+        var orderLink = (window.location.origin + baseUrl) + '/ver-pedido.html?id=' + encodeURIComponent(pedido.id);
+        var msg = '🛍️ *¡Hola! Quiero hacer un pedido*\n\n';
+        msg += '📋 *Resumen:*\n';
+        msg += '• ' + cart.length + ' producto' + (cart.length !== 1 ? 's' : '') + '\n';
+        msg += '• Total: $' + pedido.totalUSD.toFixed(2) + '\n';
+        if (pedido.totalBS > 0) msg += '• Bs: Bs. ' + pedido.totalBS.toFixed(2) + '\n';
+        msg += '\n🔗 *Ver pedido completo:*\n' + orderLink + '\n\n';
+        msg += '_Quedo atento a tu respuesta. Gracias!_ 🙌';
 
         // Confirm before sending
         var confirmar = await new Promise(function (resolve) {
@@ -259,18 +281,37 @@
 
         closeCart();
 
-        // Get WhatsApp number
-        var waNum = '584121234567';
+        // Get WhatsApp number from contact info
+        var waNum = '';
         try {
             var ci = JSON.parse(localStorage.getItem('contactoInfo') || '{}');
             if (ci.whatsapp) waNum = ci.whatsapp;
         } catch (e) {}
 
-        // Open WhatsApp BEFORE clearing cart
-        window.open('https://wa.me/' + waNum + '?text=' + msg, '_blank');
+        if (!waNum) {
+            // No WhatsApp configured - order is saved but can't message
+            if (window.Users && typeof window.Users.showToast === 'function') {
+                window.Users.showToast('✅ Pedido guardado. El administrador te contactará pronto.', 'success');
+            } else {
+                alert('✅ Pedido guardado. El administrador te contactará pronto.');
+            }
+            return;
+        }
 
-        // Clear cart AFTER WhatsApp opens
-        clearCart();
+        // Open WhatsApp BEFORE clearing cart
+        var waWindow = window.open('https://wa.me/' + encodeURIComponent(waNum.replace(/[^0-9]/g, '')) + '?text=' + encodeURIComponent(msg), '_blank');
+
+        // Only clear cart if WhatsApp actually opened (not blocked)
+        if (waWindow && !waWindow.closed) {
+            clearCart(true);
+        } else {
+            // If popup blocked, keep cart but alert user
+            if (window.Users && typeof window.Users.showToast === 'function') {
+                window.Users.showToast('⚠️ Permití ventanas emergentes para que WhatsApp se abra. Tu pedido ya está guardado.', 'warning');
+            } else {
+                alert('⚠️ Permití ventanas emergentes (popups) para abrir WhatsApp. Tu pedido ya está guardado en el sistema.');
+            }
+        }
 
         if (user && window.Users && typeof window.Users.showToast === 'function') {
             window.Users.showToast('Pedido enviado ' + user.nombre.split(' ')[0] + '! Lo veras en tu historial.', 'success');

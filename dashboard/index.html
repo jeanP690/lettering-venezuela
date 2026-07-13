@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' data: https://*.supabase.co https://ve.dolarapi.com;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>lettering venezuela</title>
     <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/lib/supabase.js?v=2"></script>
     <script src="../assets/js/db.js?v=2"></script>
@@ -27,9 +27,10 @@
                 <button class="menu-item" onclick="mostrarSeccion('sec-productos')">📦 Productos</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-pedidos')">🛒 Pedidos</button>
                 <button class="menu-item" onclick="mostrarSeccion('sec-config')">⚙️ Configuración</button>
-                <button class="menu-item" onclick="toggleDarkMode()" style="margin-top:auto;border-top:1px solid var(--border-light);padding-top:16px;">🌙 Modo Oscuro</button>
-                <button class="menu-item" onclick="logoutDashboard()" style="border-top:1px solid var(--border-light);padding-top:4px;padding-bottom:8px;color:#ef4444;">🚪 Cerrar Sesión</button>
             </nav>
+            <div class="sidebar-bottom">
+                <button class="menu-item" onclick="logoutDashboard()" style="color:#ef4444;">🚪 Cerrar Sesión</button>
+            </div>
         </aside>
 
         <main class="main-content">
@@ -37,79 +38,94 @@
                 <div class="title-container">
                     <h1>Panel de Control (Dashboard)</h1>
                 </div>
+
+                <div id="low-stock-banner" class="low-stock-banner" style="display:none;" onclick="mostrarSeccion('sec-productos','inventario')">
+                    ⚠️ <span id="low-stock-count"></span> producto(s) con stock bajo. Haz clic para ver.
+                </div>
                 
-                <div class="stats-grid">
-                    <div class="stat-card card-productos-unicos">
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card card-productos-unicos" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">📦</div>
                         <div class="stat-info-box">
                             <h3>Productos Únicos</h3>
                             <p id="dash-prod-totales">0</p>
                         </div>
                     </div>
-                    <div class="stat-card card-stock-total">
+                    <div class="stat-card card-stock-total" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">🧱</div>
                         <div class="stat-info-box">
                             <h3>Stock Total</h3>
                             <p id="dash-stock-total">0</p>
                         </div>
                     </div>
-                    <div class="stat-card card-stock-escaso">
+                    <div class="stat-card card-stock-escaso" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">⚠️</div>
                         <div class="stat-info-box">
                             <h3>Stock Escaso (≤5)</h3>
                             <p id="dash-stock-escaso">0</p>
                         </div>
                     </div>
-                    <div class="stat-card card-stock-cero" style="border-left: 5px solid #dc2626;">
+                    <div class="stat-card card-stock-cero" draggable="true" style="border-left: 5px solid #dc2626;">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">🔴</div>
                         <div class="stat-info-box">
                             <h3>Sin Existencia (0)</h3>
                             <p id="dash-stock-cero">0</p>
                         </div>
                     </div>
-                    <div class="stat-card card-unidades-vendidas">
+                    <div class="stat-card card-unidades-vendidas" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">🛒</div>
                         <div class="stat-info-box">
                             <h3>Unidades Vendidas</h3>
                             <p id="dash-stock-vendido">0</p>
                         </div>
                     </div>
-                    <div class="stat-card card-clientes-reg">
+                    <div class="stat-card card-clientes-reg" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">👥</div>
                         <div class="stat-info-box">
-                            <h3>Clientes Registrados</h3>
+                            <h3>Ventas Guardadas</h3>
                             <p id="dash-clientes">0</p>
                         </div>
                     </div>
-                    <div class="stat-card card-ventas-totales">
+                    <div class="stat-card card-ventas-totales" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">💰</div>
                         <div class="stat-info-box">
                             <h3>Ventas Totales</h3>
                             <p id="dash-total-vendido">$0.00</p>
                         </div>
                     </div>
-                    <div class="stat-card card-total-cobrado">
+                    <div class="stat-card card-total-cobrado" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">✅</div>
                         <div class="stat-info-box">
                             <h3>Total Cobrado</h3>
                             <p id="dash-total-pagado">$0.00</p>
                         </div>
                     </div>
-                    <div class="stat-card card-cuentas-cobrar">
+                    <div class="stat-card card-cuentas-cobrar" draggable="true">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">⏳</div>
                         <div class="stat-info-box">
                             <h3>Cuentas por Cobrar</h3>
                             <p id="dash-deudas">$0.00</p>
                         </div>
                     </div>
-                    <div class="stat-card card-pedidos-pendientes" style="border-left: 5px solid #f59e0b;">
+                    <div class="stat-card card-pedidos-pendientes" draggable="true" style="border-left: 5px solid #f59e0b;">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">🛒</div>
                         <div class="stat-info-box">
                             <h3>Pedidos Online Pendientes</h3>
                             <p id="dash-pedidos-pendientes">0</p>
                         </div>
                     </div>
-                    <div class="stat-card card-usuarios-reg" style="border-left: 5px solid #4f46e5;">
+                    <div class="stat-card card-usuarios-reg" draggable="true" style="border-left: 5px solid #4f46e5;">
+                        <div class="drag-handle">⠿</div>
                         <div class="stat-icon">👤</div>
                         <div class="stat-info-box">
                             <h3>Usuarios Web Registrados</h3>
@@ -122,6 +138,17 @@
                             <h3>Tasa del Día</h3>
                             <p id="dash-tasa-dia">—</p>
                         </div>
+                    </div>
+                </div>
+
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <h3>🏆 Top 5 Productos Más Vendidos</h3>
+                        <canvas id="chart-top-productos" height="250"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>📈 Ventas por Mes</h3>
+                        <canvas id="chart-ventas-mensuales" height="250"></canvas>
                     </div>
                 </div>
             </section>
@@ -226,17 +253,8 @@
                         </div>
                         <div class="form-group span-completo">
                             <label>Productos *</label>
-                            <div id="productos-container-venta">
-                                <div class="producto-fila">
-                                    <div class="product-search-wrapper">
-                                        <input type="text" class="cli-producto-input" placeholder="Buscar producto..." autocomplete="off">
-                                        <div class="product-search-dropdown"></div>
-                                    </div>
-                                    <input type="number" class="cli-producto-cant" value="1" min="1" style="width:60px;height:45px;padding:6px 8px;border-radius:10px;border:1px solid var(--border-darker);font-family:inherit;font-size:0.9rem;background:#f8fafc;text-align:center;flex-shrink:0;">
-                                    <button type="button" class="btn-remove-prod" onclick="this.parentElement.remove()" style="display:none;">✕</button>
-                                </div>
-                            </div>
-                            <button type="button" class="btn-add-prod" onclick="agregarFilaProductoVenta()">+ Agregar otro producto</button>
+                            <div id="venta-productos-seleccionados" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+                            <button type="button" onclick="Ventas.abrirSeleccionProductos()" style="width:100%;padding:14px 18px;background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:10px;cursor:pointer;font-size:0.95rem;font-weight:600;color:#475569;transition:all 0.15s;">📦 Seleccionar Productos</button>
                         </div>
                         <div class="form-group">
                             <label for="venta-total">Total ($) *</label>
@@ -276,12 +294,10 @@
                         <div class="search-container" style="margin:0; flex:1; max-width:400px;">
                             <input type="text" id="buscar-venta" placeholder="🔍 Buscar venta..." oninput="renderizarVentas()">
                         </div>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <label for="filtro-fecha-venta" style="font-size:0.8rem;color:#64748b;font-weight:600;white-space:nowrap;">📅</label>
-                            <select id="filtro-fecha-venta" class="table-input-compact" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-darker);font-family:inherit;font-size:0.85rem;max-width:160px;" onchange="renderizarVentas()">
-                                <option value="">Todas las fechas</option>
-                            </select>
-                            <button onclick="limpiarFiltroFechaVenta()" class="btn-edit-action" style="padding:4px 10px;font-size:0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;">📋 Todas</button>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <button onclick="Ventas.abrirSelectorFechas()" class="btn-edit-action" style="padding:6px 14px;font-size:0.82rem;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:600;">📅 Filtrar por fecha</button>
+                            <span id="dash-fechas-seleccionadas" style="font-size:0.75rem;color:#6366f1;font-weight:600;"></span>
+                            <button onclick="Ventas.limpiarFiltroFecha()" class="btn-edit-action" style="padding:4px 10px;font-size:0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;">✕ Limpiar</button>
                             <button onclick="exportarVentasCSV()" class="btn-edit-action" style="padding:4px 10px;font-size:0.75rem;background:#dcfce7;border:1px solid #bbf7d0;color:#16a34a;">📥 Exportar</button>
                             <span id="dash-fechas-disponibles" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
                         </div>
@@ -397,12 +413,16 @@
                                     <input type="text" id="nombre" placeholder="Ej. Marcador Punta Pincel" required>
                                 </div>
                                 <div class="form-group">
+                                    <label for="codigo">Código / SKU</label>
+                                    <input type="text" id="codigo" placeholder="Se genera automáticamente">
+                                </div>
+                                <div class="form-group">
                                     <label for="categoria">Categoría *</label>
-                                    <select id="categoria" required></select>
+                                    <select id="categoria" required onchange="generarCodigoPreview()"></select>
                                 </div>
                                 <div class="form-group">
                                     <label for="marca-select">Marca *</label>
-                                    <select id="marca-select" required></select>
+                                    <select id="marca-select" required onchange="generarCodigoPreview()"></select>
                                 </div>
                                 <div class="form-group">
                                     <label for="cantidad">Cantidad Inicial *</label>
@@ -415,6 +435,12 @@
                                 <div class="form-group">
                                     <label for="descripcion">Descripción</label>
                                     <textarea id="descripcion" placeholder="Descripción del producto (opcional)" style="width:100%;padding:12px;border:1px solid var(--border-darker);border-radius:10px;font-family:inherit;font-size:0.9rem;background:#f8fafc;min-height:80px;resize:vertical;box-sizing:border-box;"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Estado</label>
+                                    <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid var(--border-darker);cursor:pointer;">
+                                        <input type="checkbox" id="prod-activo" checked> Activo (visible en tienda)
+                                    </label>
                                 </div>
                                 <div class="form-group">
                                     <label>Fotos del Producto</label>
@@ -440,10 +466,12 @@
                                         <tr>
                                             <th style="width: 80px;">Fotos</th>
                                             <th>Producto</th>
+                                            <th>Código</th>
                                             <th>Categoría</th>
                                             <th>Marca</th>
                                             <th>Stock</th>
                                             <th>Precio</th>
+                                            <th>Estado</th>
                                             <th style="text-align: center; width: 140px;">Acciones</th>
                                         </tr>
                                     </thead>
@@ -458,136 +486,273 @@
 
             <section id="sec-pedidos" class="tab-content">
                 <div class="title-container"><h1>Pedidos (Tienda Online)</h1></div>
-                <div class="table-wrapper text-scrollable">
-                    <table class="modern-table">
-                        <thead>
-                            <tr>
-                                <th>Persona (WhatsApp)</th>
-                                <th>Producto</th>
-                                <th>Monto</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-pedidos"></tbody>
-                    </table>
+                <div class="table-container-flex">
+                    <div class="clientes-filter-bar">
+                        <div class="clientes-filter-tabs" id="pedidos-filter-tabs">
+                            <button class="clientes-filter-btn active" data-filter="all" onclick="Pedidos.setFilter('all')">📋 Todos</button>
+                            <button class="clientes-filter-btn" data-filter="pendiente" onclick="Pedidos.setFilter('pendiente')">⏳ Pendientes</button>
+                            <button class="clientes-filter-btn" data-filter="aprobado" onclick="Pedidos.setFilter('aprobado')">✅ Aprobados</button>
+                            <button class="clientes-filter-btn" data-filter="entregado" onclick="Pedidos.setFilter('entregado')">📦 Entregados</button>
+                            <button class="clientes-filter-btn" data-filter="cancelado" onclick="Pedidos.setFilter('cancelado')">❌ Cancelados</button>
+                        </div>
+                        <div class="search-container" style="margin:0;flex:1;max-width:350px;">
+                            <input type="text" id="buscar-pedido" placeholder="🔍 Buscar pedido..." oninput="Pedidos.render()">
+                        </div>
+                    </div>
+                    <div class="table-wrapper text-scrollable">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Contacto</th>
+                                    <th>Productos</th>
+                                    <th>Monto</th>
+                                    <th>Estado</th>
+                                    <th style="text-align:center;width:200px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-pedidos"></tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
             <section id="sec-config" class="tab-content">
-                <div class="title-container"><h1>Configuración General</h1></div>
+                <div class="title-container"><h1>⚙️ Configuración General</h1></div>
 
-                <div class="grid-form-tabla-productos">
-                    <div class="form-container">
-                        <h2>Tasa de Cambio (USD → BS)</h2>
+                <div class="config-grid">
 
-                        <div class="form-group">
-                            <label>Modo de tasa</label>
-                            <div style="display:flex; gap:12px; margin-top:6px; flex-wrap:wrap;">
-                                <label class="modo-tasa-label" id="modo-auto-label" style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
-                                    <input type="radio" name="modo-tasa" value="auto" onchange="cambiarModoTasa('auto')"> Automático (API)
-                                </label>
-                                <label class="modo-tasa-label" id="modo-manual-label" style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
-                                    <input type="radio" name="modo-tasa" value="manual" onchange="cambiarModoTasa('manual')"> Manual
-                                </label>
-                            </div>
+                    <!-- TASA DE CAMBIO -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <span class="config-card-icon">💱</span>
+                            <div><h2>Tasa de Cambio</h2><p class="config-card-sub">USD → Bolívares</p></div>
                         </div>
-
-                        <div id="tasa-auto-section" style="display:none;">
+                        <div class="config-card-body">
                             <div class="form-group">
-                                <label>Fuente</label>
-                                <div style="display:flex; gap:12px; margin-top:6px; flex-wrap:wrap;">
-                                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
-                                        <input type="radio" name="fuente-tasa" value="oficial" onchange="cambiarFuenteTasa('oficial')"> BCV (Oficial)
+                                <label>Modo de tasa</label>
+                                <div class="config-radio-group">
+                                    <label class="config-radio-label" id="modo-auto-label">
+                                        <input type="radio" name="modo-tasa" value="auto" onchange="cambiarModoTasa('auto')"> Automático (API)
                                     </label>
-                                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 16px; border:2px solid var(--border); border-radius:8px; transition:all .2s;">
-                                        <input type="radio" name="fuente-tasa" value="paralelo" onchange="cambiarFuenteTasa('paralelo')"> Paralelo / BSV
+                                    <label class="config-radio-label" id="modo-manual-label">
+                                        <input type="radio" name="modo-tasa" value="manual" onchange="cambiarModoTasa('manual')"> Manual
                                     </label>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Tasa actual</label>
-                                <p id="cfg-auto-rate" style="background:var(--bg-light); padding:12px 16px; border-radius:10px; font-family:monospace; margin:0; font-size:1.2rem; font-weight:700;">Bs. —</p>
+                            <div id="tasa-auto-section" style="display:none;">
+                                <div class="form-group">
+                                    <label>Fuente</label>
+                                    <div class="config-radio-group">
+                                        <label class="config-radio-label">
+                                            <input type="radio" name="fuente-tasa" value="oficial" onchange="cambiarFuenteTasa('oficial')"> BCV (Oficial)
+                                        </label>
+                                        <label class="config-radio-label">
+                                            <input type="radio" name="fuente-tasa" value="paralelo" onchange="cambiarFuenteTasa('paralelo')"> Paralelo / BSV
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tasa actual</label>
+                                    <p class="config-rate-display" id="cfg-auto-rate">Bs. —</p>
+                                </div>
+                                <div class="form-group">
+                                    <label>Última actualización</label>
+                                    <p class="config-meta" id="cfg-auto-update">—</p>
+                                </div>
+                                <button type="button" class="btn-primary" onclick="actualizarTasaAuto()" id="btn-actualizar-auto">🔄 Actualizar ahora</button>
+                                <p class="config-hint">La tasa se obtiene de dolarapi.com. Actualízala manualmente cuando quieras.</p>
                             </div>
-                            <div class="form-group">
-                                <label>Última actualización</label>
-                                <p id="cfg-auto-update" style="color:#64748b; font-size:0.85rem; margin:0;">—</p>
+                            <div id="tasa-manual-section">
+                                <form id="form-tasa">
+                                    <div class="form-group">
+                                        <label for="cfg-tasa">1 USD equivale a (Bs.)</label>
+                                        <input type="number" id="cfg-tasa" step="0.01" min="0" placeholder="36.50" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Vista previa</label>
+                                        <p class="config-rate-display" id="cfg-preview">$10.00 → Bs. 365.00</p>
+                                    </div>
+                                    <button type="submit" class="btn-primary">Guardar Tasa</button>
+                                </form>
                             </div>
-                            <button type="button" class="btn-primary" onclick="actualizarTasaAuto()" id="btn-actualizar-auto" style="display:inline-flex; align-items:center; gap:6px;">🔄 Actualizar ahora</button>
-                            <p style="margin-top:12px; color:#64748b; font-size:0.85rem;">La tasa se obtiene automáticamente de dolarapi.com. Puedes actualizarla manualmente cuando quieras.</p>
                         </div>
+                    </div>
 
-                        <div id="tasa-manual-section">
-                            <form id="form-tasa">
+                    <!-- INFORMACIÓN DE CONTACTO -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <span class="config-card-icon">📞</span>
+                            <div><h2>Información de Contacto</h2><p class="config-card-sub">Redes sociales y WhatsApp</p></div>
+                        </div>
+                        <div class="config-card-body">
+                            <form id="form-contacto-info">
                                 <div class="form-group">
-                                    <label for="cfg-tasa">1 USD equivale a (Bs.) *</label>
-                                    <input type="number" id="cfg-tasa" step="0.01" min="0" placeholder="36.50" required>
+                                    <label for="cfg-whatsapp">WhatsApp (con código de país)</label>
+                                    <input type="tel" id="cfg-whatsapp" placeholder="584121234567">
                                 </div>
                                 <div class="form-group">
-                                    <label>Vista previa</label>
-                                    <p id="cfg-preview" style="background:var(--bg-light); padding:12px 16px; border-radius:10px; font-family:monospace; margin:0;">$10.00 → Bs. 365.00</p>
+                                    <label for="cfg-instagram">Instagram (URL completa)</label>
+                                    <input type="url" id="cfg-instagram" placeholder="https://instagram.com/letteringvzla">
                                 </div>
-                                <button type="submit" class="btn-primary">Guardar Tasa</button>
+                                <div class="form-group">
+                                    <label for="cfg-facebook">Facebook (URL completa)</label>
+                                    <input type="url" id="cfg-facebook" placeholder="https://facebook.com/letteringvzla">
+                                </div>
+                                <button type="submit" class="btn-primary">Guardar Contacto</button>
                             </form>
                         </div>
-
-                        <p style="margin-top: 16px; color: #64748b; font-size: 0.85rem;">Esta tasa se usa en la tienda online para mostrar precios en Bolívares.</p>
                     </div>
 
-                    <div class="form-container">
-                        <h2>Cambiar Contraseña del Dashboard</h2>
-                        <form id="form-cambiar-pass">
-                            <div class="form-group">
-                                <label for="cfg-pass-actual">Contraseña actual</label>
-                                <input type="password" id="cfg-pass-actual" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="cfg-pass-nueva">Nueva contraseña</label>
-                                <input type="password" id="cfg-pass-nueva" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="cfg-pass-confirmar">Confirmar nueva contraseña</label>
-                                <input type="password" id="cfg-pass-confirmar" required>
-                            </div>
-                            <p id="cfg-pass-error" style="color:#ef4444;font-size:0.85rem;display:none;margin:0 0 8px;"></p>
-                            <button type="submit" class="btn-primary">🔑 Cambiar Contraseña</button>
-                        </form>
-                        <hr style="margin:20px 0;border-color:#e2e8f0;">
+                    <!-- ADMINISTRADORES -->
+                    <div class="config-card" id="cfg-admin-users-section">
+                        <div class="config-card-header">
+                            <span class="config-card-icon">👥</span>
+                            <div><h2>Administradores</h2><p class="config-card-sub">Usuarios del dashboard</p></div>
+                        </div>
+                        <div class="config-card-body">
+                            <div id="admin-users-list" class="config-admin-list"></div>
+                            <div class="config-divider"></div>
+                            <h3 class="config-subtitle">Agregar usuario</h3>
+                            <form id="form-add-admin">
+                                <div class="config-form-row">
+                                    <div class="form-group">
+                                        <label for="cfg-admin-user">Usuario</label>
+                                        <input type="text" id="cfg-admin-user" placeholder="Ej. admin" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cfg-admin-pass">Contraseña</label>
+                                        <input type="password" id="cfg-admin-pass" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cfg-admin-rol">Rol</label>
+                                        <select id="cfg-admin-rol">
+                                            <option value="admin">Admin (acceso completo)</option>
+                                            <option value="editor">Editor (sin configuración)</option>
+                                            <option value="viewer">Visor (solo lectura)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <p id="cfg-admin-error" class="config-error"></p>
+                                <div class="config-actions-row">
+                                    <button type="submit" class="btn-primary">➕ Agregar Usuario</button>
+                                    <button type="button" onclick="resetAdminUsers()" class="config-btn-danger">🔄 Restaurar admin</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    <div class="form-container">
-                        <h2>Migración de Datos</h2>
-                        <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">Migra tus datos existentes desde localStorage a Supabase. Esto incluye productos, categorías y marcas.</p>
-                        <button type="button" class="btn-primary" onclick="migrarDatosALaNube()" id="btn-migrar" style="background:#6366f1;display:inline-flex;align-items:center;gap:6px;">☁️ Migrar datos a Supabase</button>
-                        <p id="migracion-status" style="margin-top:8px;color:#64748b;font-size:0.85rem;"></p>
-                        <button type="button" onclick="migrarImagenesANube()" class="btn-edit-action" style="margin-top:8px;padding:8px 16px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;">🖼️ Migrar imágenes a Supabase</button>
-                        <hr style="margin:20px 0;border-color:#e2e8f0;">
+
+                    <!-- SEGURIDAD -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <span class="config-card-icon">🔑</span>
+                            <div><h2>Seguridad</h2><p class="config-card-sub">Cambiar contraseña del dashboard</p></div>
+                        </div>
+                        <div class="config-card-body">
+                            <form id="form-cambiar-pass">
+                                <div class="form-group">
+                                    <label for="cfg-pass-actual">Contraseña actual</label>
+                                    <input type="password" id="cfg-pass-actual" required>
+                                </div>
+                                <div style="display:flex;gap:12px;">
+                                    <div class="form-group" style="flex:1;">
+                                        <label for="cfg-pass-nueva">Nueva contraseña</label>
+                                        <input type="password" id="cfg-pass-nueva" required>
+                                    </div>
+                                    <div class="form-group" style="flex:1;">
+                                        <label for="cfg-pass-confirmar">Confirmar</label>
+                                        <input type="password" id="cfg-pass-confirmar" required>
+                                    </div>
+                                </div>
+                                <p id="cfg-pass-error" class="config-error"></p>
+                                <button type="submit" class="btn-primary">🔑 Cambiar Contraseña</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="form-container">
-                        <h2>Historial de Cambios en Inventario</h2>
-                        <div id="stock-log-container" style="max-height:200px;overflow-y:auto;font-size:0.8rem;color:#64748b;"></div>
-                        <button type="button" onclick="renderizarStockLog()" class="btn-edit-action" style="margin-top:8px;padding:6px 14px;">📋 Ver cambios</button>
-                        <hr style="margin:20px 0;border-color:#e2e8f0;">
+
+                    <!-- MIGRACIÓN SUPABASE -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <span class="config-card-icon">☁️</span>
+                            <div><h2>Migración a Supabase</h2><p class="config-card-sub">Subir datos locales a la nube</p></div>
+                        </div>
+                        <div class="config-card-body">
+                            <p class="config-hint">Migra tus datos (productos, categorías, marcas) de localStorage a Supabase.</p>
+                            <button type="button" class="btn-primary" onclick="migrarDatosALaNube()" id="btn-migrar" style="background:#6366f1;">☁️ Migrar datos a Supabase</button>
+                            <p id="migracion-status" class="config-meta"></p>
+                            <button type="button" onclick="migrarImagenesANube()" class="config-btn-outline" style="margin-top:8px;">🖼️ Migrar imágenes a Supabase</button>
+                        </div>
                     </div>
-                    <div class="form-container">
-                        <h2>Información de Contacto</h2>
-                        <form id="form-contacto-info">
-                            <div class="form-group">
-                                <label for="cfg-whatsapp">WhatsApp (con código de país)</label>
-                                <input type="tel" id="cfg-whatsapp" placeholder="584121234567">
-                            </div>
-                            <div class="form-group">
-                                <label for="cfg-instagram">Instagram (URL completa)</label>
-                                <input type="url" id="cfg-instagram" placeholder="https://instagram.com/letteringvzla">
-                            </div>
-                            <div class="form-group">
-                                <label for="cfg-facebook">Facebook (URL completa)</label>
-                                <input type="url" id="cfg-facebook" placeholder="https://facebook.com/letteringvzla">
-                            </div>
-                            <button type="submit" class="btn-primary">Guardar Contacto</button>
-                        </form>
+
+                    <!-- CAMBIOS EN INVENTARIO -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <span class="config-card-icon">📦</span>
+                            <div><h2>Historial de Inventario</h2><p class="config-card-sub">Cambios en el stock de productos</p></div>
+                        </div>
+                        <div class="config-card-body">
+                            <div id="stock-log-container" class="config-log-container"></div>
+                            <button type="button" onclick="renderizarStockLog()" class="btn-edit-action">📋 Ver cambios</button>
+                        </div>
                     </div>
+
+                    <!-- ACTIVIDAD -->
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <span class="config-card-icon">📋</span>
+                            <div><h2>Historial de Actividad</h2><p class="config-card-sub">Registro de acciones en el sistema</p></div>
+                        </div>
+                        <div class="config-card-body">
+                            <div id="activity-log-container" class="config-log-container"></div>
+                            <div class="config-actions-row">
+                                <button type="button" onclick="renderizarActivityLog()" class="btn-edit-action">📋 Ver actividad</button>
+                                <button type="button" onclick="limpiarActivityLog()" class="config-btn-danger">🗑️ Limpiar historial</button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
         </main>
+    </div>
+
+    <div id="fecha-selector-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:640px;">
+            <div class="modal-advanced-header">
+                <h3>📅 Seleccionar Fechas</h3>
+                <span class="modal-advanced-close" onclick="Ventas.cerrarSelectorFechas()">&times;</span>
+            </div>
+            <div class="modal-advanced-body" id="fecha-selector-body" style="padding:20px;">
+                <div id="fecha-selector-lista" style="max-height:480px;overflow-y:auto;padding:2px;"></div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;">
+                    <button onclick="Ventas.cerrarSelectorFechas()" style="padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;">Cancelar</button>
+                    <button onclick="Ventas.aplicarFechas()" style="padding:8px 20px;background:#6366f1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;">✅ Aplicar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="seleccion-productos-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:960px;">
+            <div class="modal-advanced-header">
+                <h3>📦 Seleccionar Productos</h3>
+                <span class="modal-advanced-close" onclick="Ventas.cerrarSeleccionProductos()">&times;</span>
+            </div>
+            <div class="modal-advanced-body" style="padding:20px;">
+                <div style="margin-bottom:16px;">
+                    <input type="text" id="sel-prod-buscar" placeholder="🔍 Buscar producto..." oninput="Ventas.filtrarSeleccionProductos()" style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:0.9rem;background:#f8fafc;">
+                </div>
+                <div id="sel-prod-lista" style="max-height:500px;overflow-y:auto;padding:2px;"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
+                    <span id="sel-prod-count" style="font-size:0.85rem;color:#64748b;font-weight:600;">0 productos seleccionados</span>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="Ventas.limpiarSeleccionProductos()" style="padding:8px 16px;background:#fee2e2;border:1px solid #fecaca;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.8rem;color:#dc2626;">✕ Limpiar</button>
+                        <button onclick="Ventas.cerrarSeleccionProductos()" style="padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;">Cancelar</button>
+                        <button onclick="Ventas.confirmarSeleccionProductos()" style="padding:8px 20px;background:#6366f1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;">✅ Aceptar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="abono-modal" class="modal-advanced">
@@ -653,40 +818,43 @@
     </div>
 
     <div id="producto-fotos-manager-modal" class="modal-advanced">
-        <div class="modal-advanced-card">
+        <div class="modal-advanced-card" style="max-width:600px;">
             <div class="modal-advanced-header">
                 <h3 id="prod-fotos-modal-titulo">Gestión de Fotos</h3>
                 <span class="modal-advanced-close" onclick="cerrarManagerFotosProducto()">&times;</span>
             </div>
             <div class="modal-advanced-body">
-                <p class="modal-instruction">La primera foto es la foto principal que se mostrará en clientes. Las adicionales son para otros ángulos.</p>
-                <div id="prod-foto-principal-section" class="foto-section" style="margin-bottom:20px;padding:16px;background:#f8fafc;border-radius:12px;border:2px dashed #cbd5e1;">
-                    <div style="font-weight:700;font-size:0.9rem;color:#1e293b;margin-bottom:12px;">📸 Foto Principal</div>
-                    <div id="prod-foto-principal-area" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-                        <div style="color:#94a3b8;font-size:0.85rem;">Sin foto principal</div>
-                        <input type="file" id="input-prod-principal" accept="image/*" style="display:none;" onchange="prodFotosAgregarPrincipal(event)">
-                        <button class="btn-edit-action" onclick="document.getElementById('input-prod-principal').click()" style="padding:8px 20px;font-weight:600;">➕ Establecer foto principal</button>
-                    </div>
+                <!-- SECCIÓN 1: FOTO PRINCIPAL -->
+                <div class="foto-section" style="margin-bottom:16px;padding:14px;background:#f8fafc;border-radius:12px;border:2px dashed #cbd5e1;">
+                    <div style="font-weight:700;font-size:0.85rem;color:#1e293b;margin-bottom:10px;">📸 Foto Principal</div>
+                    <div id="prod-foto-principal-area" style="display:flex;flex-direction:column;align-items:center;gap:8px;min-height:80px;justify-content:center;"></div>
                 </div>
-                <div class="foto-section">
-                    <div style="font-weight:700;font-size:0.9rem;color:#1e293b;margin-bottom:12px;">🖼️ Fotos Adicionales <span id="prod-fotos-adicionales-count" style="color:#94a3b8;font-weight:400;"></span></div>
+
+                <!-- SECCIÓN 2: FOTOS ADICIONALES (miniaturas) -->
+                <div class="foto-section" style="margin-bottom:16px;">
+                    <div style="font-weight:700;font-size:0.85rem;color:#1e293b;margin-bottom:8px;">🖼️ Fotos Adicionales <span id="prod-fotos-adicionales-count" style="color:#94a3b8;font-weight:400;"></span></div>
                     <div class="recibos-gallery-container">
                         <label for="input-prod-add-more" class="gallery-add-card">
                             <span class="add-icon">＋</span>
-                            <span class="add-text">Añadir fotos</span>
+                            <span class="add-text">Añadir</span>
                         </label>
                         <input type="file" id="input-prod-add-more" accept="image/*" multiple style="display:none;" onchange="prodFotosAgregarMas(event)">
                         <div id="prod-fotos-lista-miniaturas" class="recibos-miniaturas-flex"></div>
                     </div>
                 </div>
-                <div class="recibos-actions-bar" style="margin-top:12px;">
-                    <input type="file" id="input-prod-reemplazar" accept="image/*" style="display:none;" onchange="prodFotosProcesarReemplazo(event)">
-                    <button class="btn-action-recibo btn-edit-rec" onclick="document.getElementById('input-prod-reemplazar').click()">✏️ Reemplazar Selección</button>
-                    <button class="btn-action-recibo btn-delete-rec" onclick="prodFotosEliminarSeleccionada()">🗑️ Eliminar Selección</button>
-                    <button class="btn-action-recibo" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;" onclick="prodFotosEstablecerComoPrincipal()">⭐ Establecer como principal</button>
-                </div>
-                <div class="recibos-preview-grande-box">
-                    <img id="prod-fotos-grande-target" src="" alt="Vista previa">
+
+                <!-- SECCIÓN 3: EDICIÓN DE FOTO SELECCIONADA -->
+                <div class="foto-section" style="padding:14px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                    <div style="font-weight:700;font-size:0.85rem;color:#1e293b;margin-bottom:10px;">✏️ Edición de Foto Seleccionada</div>
+                    <div class="recibos-preview-grande-box" style="min-height:200px;max-height:260px;margin-bottom:10px;">
+                        <img id="prod-fotos-grande-target" src="" alt="Vista previa" style="max-width:100%;max-height:240px;object-fit:contain;border-radius:8px;">
+                    </div>
+                    <div class="recibos-actions-bar" style="gap:6px;">
+                        <input type="file" id="input-prod-reemplazar" accept="image/*" style="display:none;" onchange="prodFotosProcesarReemplazo(event)">
+                        <button class="btn-action-recibo btn-edit-rec" onclick="document.getElementById('input-prod-reemplazar').click()" style="flex:1;padding:8px 12px;font-size:0.8rem;">✏️ Reemplazar</button>
+                        <button class="btn-action-recibo btn-delete-rec" onclick="prodFotosEliminarSeleccionada()" style="flex:1;padding:8px 12px;font-size:0.8rem;">🗑️ Eliminar</button>
+                        <button class="btn-action-recibo" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;flex:1;padding:8px 12px;font-size:0.8rem;" onclick="prodFotosEstablecerComoPrincipal()">⭐ Hacer principal</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -701,7 +869,7 @@
             <div class="modal-advanced-body">
                 <p class="modal-instruction" id="single-foto-modal-desc">Gestione la foto</p>
                 <div class="recibos-preview-grande-box" style="min-height:250px;">
-                    <img id="single-foto-grande-target" src="" alt="Foto">
+                    <img id="single-foto-grande-target" src="" alt="Foto" style="max-width:100%;max-height:400px;object-fit:contain;border-radius:10px;">
                 </div>
                 <div class="recibos-actions-bar">
                     <input type="file" id="input-single-foto" accept="image/*" style="display:none;" onchange="singleFotoReemplazar(event)">
@@ -766,6 +934,10 @@
                 <div id="edit-modal-productos-lista"></div>
                 <button type="button" class="btn-add-prod" onclick="agregarFilaProductoEdicionModal()" style="margin-top:8px;">+ Agregar producto</button>
                 <hr style="margin:16px 0;border-color:#e2e8f0;">
+                <div class="form-group" style="gap:4px;margin-bottom:12px;">
+                    <label>Tasa Bs. por USD</label>
+                    <input type="number" id="edit-modal-tasa" step="0.01" class="table-input-compact" placeholder="Tasa de cambio" oninput="actualizarTotalFromModal()" style="width:100%;">
+                </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="form-group" style="gap:4px;">
                         <label>Total ($)</label>
@@ -811,15 +983,38 @@
         </div>
     </div>
 
+    <div id="pedido-detalle-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:650px;">
+            <div class="modal-advanced-header">
+                <h3 id="pedido-detalle-titulo">Detalle del Pedido</h3>
+                <span class="modal-advanced-close" onclick="Pedidos.cerrarDetalle()">&times;</span>
+            </div>
+            <div class="modal-advanced-body" id="pedido-detalle-body" style="max-height:80vh;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <div id="pedido-editar-modal" class="modal-advanced">
+        <div class="modal-advanced-card" style="max-width:700px;">
+            <div class="modal-advanced-header">
+                <h3>✏️ Editar Pedido</h3>
+                <span class="modal-advanced-close" onclick="Pedidos._cancelarEdicion()">&times;</span>
+            </div>
+            <div class="modal-advanced-body" id="pedido-editar-body" style="max-height:80vh;overflow-y:auto;"></div>
+        </div>
+    </div>
+
     <div id="image-modal" class="modal" onclick="cerrarModalImagen()">
         <span class="modal-close">&times;</span>
         <img class="modal-content-img" id="modal-img-target">
     </div>
 
     <script src="../assets/js/currency.js?v=2"></script>
-    <script src="../assets/js/cart-v2.js"></script>
+    <script src="helpers.js?v=2"></script>
+    <script src="auth.js?v=2"></script>
+    <script src="graficos.js?v=2"></script>
     <script src="../assets/js/users.js?v=2"></script>
+    <script src="../assets/js/cart-v2.js?v=2"></script>
     <script src="supabase-loader.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>

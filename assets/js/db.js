@@ -38,12 +38,29 @@
     // ================================================================
     // PRODUCTOS (inventario)
     // ================================================================
+    function generarCodigoSiFalta(product, existingCodes) {
+        if (product.codigo && product.codigo.trim()) return product.codigo.trim();
+        var cat = (product.categoria || '').slice(0, 3).toUpperCase();
+        var mar = (product.marca || '').slice(0, 2).toUpperCase();
+        var prefijo = (cat + mar) || 'PROD';
+        if (prefijo.length < 2) prefijo = 'PROD';
+        var maxNum = 0;
+        (existingCodes || []).forEach(function(c) {
+            if (c && c.startsWith(prefijo)) {
+                var n = parseInt(c.replace(prefijo + '-', ''), 10) || 0;
+                if (n > maxNum) maxNum = n;
+            }
+        });
+        var cod = prefijo + '-' + String(maxNum + 1).padStart(3, '0');
+        return cod;
+    }
+
     async function getProducts() {
         var client = getClient();
         if (!client) return [];
         var { data, error } = await client
             .from('products')
-            .select('id, name, descripcion, quantity, price, created_at, categories:category_id(name), brands:brand_id(name)')
+            .select('id, name, quantity, price, descripcion, codigo, activo, variantes, created_at, categories:category_id(name), brands:brand_id(name)')
             .order('name');
         if (error) { console.error('db.getProducts:', error); return []; }
         if (!data || data.length === 0) { console.log('db.getProducts: sin datos en Supabase'); return []; }
@@ -64,16 +81,26 @@
         });
 
         var result = data.map(function (row) {
+            var v = [];
+            try { if (row.variantes) v = JSON.parse(row.variantes); } catch(e) { v = []; }
             return {
                 id: row.id,
                 nombre: row.name,
                 descripcion: row.descripcion || '',
+                codigo: row.codigo || '',
+                activo: row.activo !== false,
+                variantes: v,
                 categoria: row.categories ? row.categories.name : '',
                 marca: row.brands ? row.brands.name : '',
                 cantidad: row.quantity,
                 precio: parseFloat(row.price),
                 fotos: photosByProduct[row.id] || []
             };
+        });
+        // Auto-generate missing codes
+        var allCodes = result.map(function(p) { return p.codigo; });
+        result.forEach(function(p) {
+            p.codigo = generarCodigoSiFalta(p, allCodes);
         });
         return result;
     }
@@ -84,7 +111,7 @@
         var { data, error } = await client
             .from('products')
             .select(`
-                id, name, quantity, price,
+                id, name, quantity, price, descripcion, codigo, activo, variantes,
                 categories:category_id(name), brands:brand_id(name)
             `)
             .eq('name', name)
@@ -95,7 +122,7 @@
             .select('url')
             .eq('product_id', data.id)
             .order('sort_order');
-        return {
+        var p = {
             id: data.id,
             nombre: data.name,
             categoria: data.categories ? data.categories.name : '',
@@ -103,8 +130,13 @@
             cantidad: data.quantity,
             precio: parseFloat(data.price),
             descripcion: data.descripcion || '',
+            codigo: data.codigo || '',
+            activo: data.activo !== false,
+            variantes: (function() { try { return JSON.parse(data.variantes || '[]'); } catch(e) { return []; } })(),
             fotos: (photos || []).map(function (p) { return p.url; })
         };
+        if (!p.codigo) p.codigo = generarCodigoSiFalta(p, []);
+        return p;
     }
 
     async function saveProduct(product) {
@@ -128,7 +160,11 @@
                 category_id: catId,
                 brand_id: brandId,
                 quantity: parseInt(product.cantidad) || 0,
-                price: parseFloat(product.precio) || 0
+                price: parseFloat(product.precio) || 0,
+                descripcion: product.descripcion || '',
+                codigo: product.codigo || '',
+                activo: product.activo !== false,
+                variantes: JSON.stringify(product.variantes || [])
             }).eq('id', product.id);
             if (error) { console.error('db.saveProduct update:', error); return null; }
             return product.id;
@@ -138,7 +174,11 @@
                 category_id: catId,
                 brand_id: brandId,
                 quantity: parseInt(product.cantidad) || 0,
-                price: parseFloat(product.precio) || 0
+                price: parseFloat(product.precio) || 0,
+                descripcion: product.descripcion || '',
+                codigo: product.codigo || '',
+                activo: product.activo !== false,
+                variantes: JSON.stringify(product.variantes || [])
             }).select('id').single();
             if (error) { console.error('db.saveProduct insert:', error); return null; }
             return data.id;
@@ -373,6 +413,57 @@
     }
 
     // ================================================================
+    // CARGA UNIFICADA: Supabase → localStorage (caché)
+    // ================================================================
+    var _dataCallbacks = [];
+
+    function onDataLoaded(cb) {
+        if (typeof cb === 'function') _dataCallbacks.push(cb);
+    }
+
+    async function initFromSupabase() {
+        var client = getClient();
+        if (!client) { _dataCallbacks.forEach(function(cb) { cb(false); }); return false; }
+
+        try {
+            // Load products
+            var prods = await getProducts();
+            if (prods && prods.length > 0) {
+                localStorage.setItem('inventario', JSON.stringify(prods));
+            }
+
+            // Load categories
+            var cats = await getCategories();
+            if (cats && cats.length > 0) {
+                localStorage.setItem('categoriasObj', JSON.stringify(cats));
+            }
+
+            // Load brands
+            var brs = await getBrands();
+            if (brs && brs.length > 0) {
+                localStorage.setItem('marcasObj', JSON.stringify(brs));
+            }
+
+            _dataCallbacks.forEach(function(cb) { cb(true); });
+            return true;
+        } catch (e) {
+            console.warn('[DB] initFromSupabase error:', e);
+            _dataCallbacks.forEach(function(cb) { cb(false); });
+            return false;
+        }
+    }
+
+    // Auto-init on load (skip if on dashboard)
+    var _isDashboard = window.location.pathname.indexOf('/dashboard/') !== -1;
+    if (!_isDashboard) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { initFromSupabase(); });
+        } else {
+            initFromSupabase();
+        }
+    }
+
+    // ================================================================
     // MIGRAR DATOS DESDE LOCALSTORAGE A SUPABASE
     // ================================================================
     async function migrateFromLocalStorage() {
@@ -481,6 +572,9 @@
         saveContactInfo: saveContactInfo,
         // Migration
         migrateFromLocalStorage: migrateFromLocalStorage,
+        // Unified loader
+        initFromSupabase: initFromSupabase,
+        onDataLoaded: onDataLoaded,
         // Helpers
         mapProduct: mapProduct,
         mapCategory: mapCategory,

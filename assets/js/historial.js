@@ -45,7 +45,7 @@
         } catch (e) { return iso; }
     }
 
-    function escapeHtml(s) {
+    var escapeHtml = window.escapeHtml || function (s) {
         return String(s == null ? '' : s)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')

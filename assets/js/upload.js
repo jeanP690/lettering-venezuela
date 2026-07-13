@@ -68,6 +68,49 @@
         }
     }
 
+    function compressImage(file, maxDim, quality) {
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            var url = URL.createObjectURL(file);
+            img.onload = function () {
+                URL.revokeObjectURL(url);
+                var w = img.width, h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    var ratio = Math.min(maxDim / w, maxDim / h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                var canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                var ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, w, h);
+                canvas.toBlob(function (blob) {
+                    if (blob) resolve(blob);
+                    else reject(new Error('Compresión fallida'));
+                }, 'image/jpeg', quality || 0.85);
+            };
+            img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Error al cargar imagen')); };
+            img.src = url;
+        });
+    }
+
+    async function uploadImage(file, folder, maxDim, quality) {
+        var compressed = await compressImage(file, maxDim || 1200, quality || 0.85);
+        var ext = 'jpg';
+        var fileName = folder + '/' + Date.now() + '_' + Math.random().toString(36).substring(2, 8) + '.' + ext;
+        var client = getClient();
+        if (!client) throw new Error('Supabase no configurado');
+        var { data, error } = await client.storage
+            .from(BUCKET_NAME)
+            .upload(fileName, compressed, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+        if (error) throw error;
+        var { data: { publicUrl } } = client.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+        return publicUrl;
+    }
+
     async function dataUrlToFile(dataUrl, filename) {
         var res = await fetch(dataUrl);
         var blob = await res.blob();
@@ -77,13 +120,25 @@
     async function migrateBase64ToStorage(dataUrl, folder) {
         var filename = 'migrated_' + Date.now() + '.jpg';
         var file = await dataUrlToFile(dataUrl, filename);
-        return await uploadFile(file, folder);
+        var compressed = await compressImage(file, 1200, 0.85);
+        var ext = 'jpg';
+        var fileName = folder + '/' + Date.now() + '_' + Math.random().toString(36).substring(2, 8) + '.' + ext;
+        var client = getClient();
+        if (!client) throw new Error('Supabase no configurado');
+        var { data, error } = await client.storage
+            .from(BUCKET_NAME)
+            .upload(fileName, compressed, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+        if (error) throw error;
+        var { data: { publicUrl } } = client.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+        return publicUrl;
     }
 
     window.Upload = {
         uploadFile: uploadFile,
         uploadMultipleFiles: uploadMultipleFiles,
         deleteFile: deleteFile,
+        compressImage: compressImage,
+        uploadImage: uploadImage,
         migrateBase64ToStorage: migrateBase64ToStorage,
         ensureBucket: ensureBucket,
         BUCKET_NAME: BUCKET_NAME

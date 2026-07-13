@@ -45,9 +45,19 @@ create table if not exists products (
     brand_id bigint references brands(id) on delete set null,
     quantity integer not null default 0,
     price numeric(10,2) not null default 0,
+    descripcion text default '',
+    codigo text default '',
+    activo boolean default true,
+    variantes jsonb default '[]'::jsonb,
     created_at timestamptz default now(),
     updated_at timestamptz default now()
 );
+
+-- Add columns if missing (for existing tables)
+alter table products add column if not exists descripcion text default '';
+alter table products add column if not exists codigo text default '';
+alter table products add column if not exists activo boolean default true;
+alter table products add column if not exists variantes jsonb default '[]'::jsonb;
 
 alter table products enable row level security;
 

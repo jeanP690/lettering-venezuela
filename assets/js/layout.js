@@ -268,7 +268,7 @@
         if (!input || !container) return;
 
         function getInventario() {
-            try { return JSON.parse(localStorage.getItem('inventario')) || []; } catch (e) { return []; }
+            try { var arr = JSON.parse(localStorage.getItem('inventario')) || []; return arr.filter(function (p) { return p.activo !== false; }); } catch (e) { return []; }
         }
         var _cachedDbProducts = null;
         async function getInventarioFromDB() {
@@ -282,17 +282,17 @@
             return getInventario();
         }
 
-        function escapeHtml(s) {
+        var escapeHtml = window.escapeHtml || function (s) {
             return String(s || '').replace(/[&<>"']/g, function (c) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
             });
-        }
+        };
 
         function normalize(s) {
             return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         }
 
-        input.addEventListener('input', function () {
+        input.addEventListener('input', async function () {
             var q = normalize(input.value.trim());
             if (q.length < 1) {
                 container.innerHTML = '';
@@ -300,10 +300,8 @@
                 return;
             }
 
-            var inventario = getInventario();
-            getInventarioFromDB().then(function (dbProds) {
-                if (dbProds.length > inventario.length) inventario = dbProds;
-            });
+            // Await Supabase data first for complete search results
+            var inventario = await getInventarioFromDB();
             var productos = inventario.filter(function (p) {
                 return p.nombre && normalize(p.nombre).indexOf(q) !== -1;
             }).slice(0, 4);
@@ -329,7 +327,7 @@
                 html += productos.map(function (p) {
                     var foto = (p.fotos && p.fotos[0]) || '';
                     var img = foto ? '<img src="' + foto + '" alt="">' : '<span class="ss-icon">📦</span>';
-                    return '<a class="ss-item" href="' + basePath + '/productos/?producto=' + encodeURIComponent(p.nombre) + '">'
+                    return '<a class="ss-item" href="' + basePath + '/productos/?q=' + encodeURIComponent(p.nombre) + '">'
                         + '<span class="ss-img">' + img + '</span>'
                         + '<span class="ss-info">'
                         +     '<span class="ss-name">' + escapeHtml(p.nombre) + '</span>'
@@ -401,4 +399,16 @@
             }
         }
     };
+
+    // Scroll to top button
+    var scrollBtn = document.createElement('button');
+    scrollBtn.id = 'scroll-to-top';
+    scrollBtn.innerHTML = '⬆';
+    scrollBtn.setAttribute('aria-label', 'Volver arriba');
+    scrollBtn.style.cssText = 'position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;background:#6366f1;color:white;border:none;font-size:1.2rem;cursor:pointer;box-shadow:0 4px 12px rgba(99,102,241,0.3);z-index:9000;display:none;align-items:center;justify-content:center;transition:opacity 0.2s;';
+    scrollBtn.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+    document.body.appendChild(scrollBtn);
+    window.addEventListener('scroll', function() {
+        scrollBtn.style.display = window.scrollY > 400 ? 'flex' : 'none';
+    });
 })();

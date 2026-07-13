@@ -6,6 +6,24 @@
     var _supabaseReady = false;
     var _sessionUser = null;
 
+    async function sha256(str) {
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            var enc = new TextEncoder().encode(str);
+            var hash = await crypto.subtle.digest('SHA-256', enc);
+            return Array.from(new Uint8Array(hash)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+        }
+        var hash = 0, i, chr;
+        if (str.length === 0) return '0';
+        for (i = 0; i < str.length; i++) {
+            chr = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0;
+        }
+        return Math.abs(hash).toString(16);
+    }
+
+    function isSha256Hash(s) { return /^[0-9a-f]{64}$/i.test(s || ''); }
+
     async function initSupabase() {
         if (window.Supabase && typeof window.Supabase.getClient === 'function') {
             try {
@@ -101,7 +119,7 @@
 
         var users = loadUsers();
         if (users.some(function (u) { return u.email === email; })) return { ok: false, error: 'Ya existe una cuenta con ese email.' };
-        var user = { id: genId(), nombre: nombre, email: email, tel: tel, password: btoa(password), fechaRegistro: new Date().toISOString() };
+        var user = { id: genId(), nombre: nombre, email: email, tel: tel, password: await sha256(password), fechaRegistro: new Date().toISOString() };
         users.push(user);
         saveUsers(users);
         setSession(user);
@@ -129,8 +147,20 @@
         }
 
         var users = loadUsers();
-        var match = users.filter(function (u) { return u.email === email && atob(u.password) === password; })[0];
+        var match = null;
+        var inputHash = await sha256(password);
+        for (var i = 0; i < users.length; i++) {
+            var u = users[i];
+            if (u.email !== email) continue;
+            var stored = u.password || '';
+            if (isSha256Hash(stored)) {
+                if (stored === inputHash) { match = u; break; }
+            } else {
+                try { if (atob(stored) === password) { match = u; u.password = inputHash; break; } } catch (e) { }
+            }
+        }
         if (!match) return { ok: false, error: 'Email o contrasena incorrectos.' };
+        saveUsers(users);
         setSession(match);
         return { ok: true, user: match };
     }
@@ -363,9 +393,9 @@
         setTimeout(function () { toast.classList.remove('show'); setTimeout(function () { toast.remove(); }, 300); }, 3500);
     }
 
-    function escapeHtml(s) {
+    var escapeHtml = window.escapeHtml || function (s) {
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-    }
+    };
 
     function renderHeaderButton() {
         var session = getSession();

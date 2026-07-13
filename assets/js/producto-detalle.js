@@ -11,10 +11,10 @@
                 if (data && data.length > 0) return data;
             } catch (e) { console.error('getInventario DB fallback:', e); }
         }
-        try { return JSON.parse(localStorage.getItem('inventario')) || []; } catch (e) { return []; }
+        try { var arr = JSON.parse(localStorage.getItem('inventario')) || []; return arr.filter(function (p) { return p.activo !== false; }); } catch (e) { return []; }
     }
 
-    function escapeHtml(s) {
+    var escapeHtml = window.escapeHtml || function (s) {
         return String(s || '').replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
@@ -116,7 +116,7 @@
         if (currentImages.length > 1) {
             thumbs.innerHTML = currentImages.map(function (img, i) {
                 return '<div class="detalle-thumb' + (i === 0 ? ' active' : '') + '" onclick="ProductoDetalle.selectImage(' + i + ')">'
-                    +   '<img src="' + img + '" alt="">'
+                    +   '<img src="' + img + '" alt="" loading="lazy">'
                     + '</div>';
             }).join('');
             thumbs.style.display = 'flex';
@@ -207,7 +207,22 @@
         selectImage: selectImage,
         qtyInc: qtyInc,
         qtyDec: qtyDec,
-        addToCart: addToCart
+        addToCart: addToCart,
+        shareProduct: function() {
+            var url = window.location.href;
+            var name = currentProduct ? currentProduct.nombre : 'Producto';
+            if (navigator.share) {
+                navigator.share({ title: name, url: url }).catch(function() {});
+            } else {
+                navigator.clipboard.writeText(url).then(function() {
+                    if (window.Users && typeof window.Users.showToast === 'function') {
+                        window.Users.showToast('🔗 Enlace copiado al portapapeles', 'success');
+                    } else { alert('🔗 Enlace copiado al portapapeles'); }
+                }).catch(function() {
+                    prompt('Copiá este enlace:', url);
+                });
+            }
+        }
     };
 
     document.addEventListener('DOMContentLoaded', loadProduct);

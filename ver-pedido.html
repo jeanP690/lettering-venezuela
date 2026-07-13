@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; connect-src 'self' data: https://*.supabase.co https://ve.dolarapi.com;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pedido - Lettering Venezuela</title>
+<meta property="og:title" content="Pedido - Lettering Venezuela">
+<meta property="og:description" content="Resumen de tu pedido">
+<meta property="og:url" content="https://letteringvenezuela.com/ver-pedido.html">
+<meta property="og:image" content="https://zufcrtwiifbguryjjirv.supabase.co/storage/v1/object/public/lettering/lettering-icon.png">
+<meta property="og:type" content="website">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;color:#1e293b}
+  .container{max-width:520px;margin:auto;padding:16px}
+  .card{background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:16px}
+  .card h2{font-size:1.15rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;gap:4px}
+  .badge-pendiente{background:#fef3c7;color:#92400e}
+  .badge-aprobado{background:#dbeafe;color:#1e40af}
+  .badge-entregado{background:#dcfce7;color:#166534}
+  .badge-cancelado{background:#fee2e2;color:#991b1b}
+  .producto{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9}
+  .producto:last-child{border:none}
+  .producto img{width:64px;height:64px;border-radius:10px;object-fit:cover;background:#f1f5f9;flex-shrink:0}
+  .producto-info{flex:1;min-width:0}
+  .producto-info .nombre{font-weight:600;font-size:0.9rem}
+  .producto-info .detalle{color:#64748b;font-size:0.82rem;margin-top:2px}
+  .producto-info .subtotal{font-weight:700;font-size:0.9rem;margin-top:4px}
+  .total-row{display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem}
+  .total-row.total{border-top:2px solid #e2e8f0;margin-top:8px;padding-top:12px;font-size:1.05rem;font-weight:700}
+  .cliente-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.85rem}
+  .cliente-info div{color:#475569}
+  .cliente-info .label{color:#94a3b8;font-size:0.75rem;text-transform:uppercase;font-weight:600}
+  .header{text-align:center;padding:24px 0 8px}
+  .header h1{font-size:1.3rem}
+  .header p{color:#64748b;font-size:0.85rem;margin-top:4px}
+  .error-state{text-align:center;padding:60px 20px;color:#94a3b8}
+  .error-state .icon{font-size:3rem;margin-bottom:16px}
+  .loading{text-align:center;padding:60px 20px;color:#94a3b8}
+  .loading .spinner{width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🛍️ Resumen de Pedido</h1>
+    <p id="pedido-id-header">Cargando...</p>
+  </div>
+  <div id="contenido">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Cargando información del pedido...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var orderId = params.get('id');
+  if (!orderId) {
+    document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">🔍</div><p>No se especificó un ID de pedido.</p></div>';
+    document.getElementById('pedido-id-header').textContent = 'Sin ID';
+    return;
+  }
+  document.getElementById('pedido-id-header').textContent = '#' + orderId;
+
+  var estadoBadge = function(estado) {
+    var map = { pendiente: 'Pendiente ⏳', aprobado: 'Aprobado ✅', entregado: 'Entregado 📦', cancelado: 'Cancelado ❌' };
+    var cls = { pendiente: 'pendiente', aprobado: 'aprobado', entregado: 'entregado', cancelado: 'cancelado' };
+    return '<span class="badge badge-' + (cls[estado] || 'pendiente') + '">' + (map[estado] || 'Pendiente ⏳') + '</span>';
+  };
+
+  var formatearFecha = function(f) {
+    if (!f) return '—';
+    var d = new Date(f);
+    return d.toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  var renderOrder = function(pedido) {
+    var items = pedido.items || [];
+    if (items.length === 0) {
+      // Try alternate format (maybe items is in items_json)
+      try { items = JSON.parse(pedido.items_json || '[]'); } catch(e) {}
+    }
+
+    // Find product photos from inventory
+    var inventario = [];
+    try { inventario = JSON.parse(localStorage.getItem('inventario')) || []; } catch(e) {}
+    var getFoto = function(nombreProd) {
+      var prod = inventario.find(function(p) { return p.nombre === nombreProd; });
+      if (prod && prod.fotos && prod.fotos.length > 0) return prod.fotos[0];
+      return null;
+    };
+
+    var itemsHtml = items.map(function(it) {
+      var q = it.cantidad || it.quantity || 1;
+      var pr = it.precio || it.price || 0;
+      var nombre = it.nombre || it.name || 'Producto';
+      var foto = getFoto(nombre) || '';
+      var cod = it.codigo ? ' [' + it.codigo + ']' : '';
+      return '<div class="producto">'
+        + (foto ? '<img src="' + foto.replace(/"/g, '&quot;') + '" alt="' + nombre.replace(/"/g, '&quot;') + '" loading="lazy">' : '<div style="width:64px;height:64px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">📦</div>')
+        + '<div class="producto-info"><div class="nombre">' + nombre + cod + '</div>'
+        + '<div class="detalle">Cant: ' + q + ' × $' + pr.toFixed(2) + '</div>'
+        + '<div class="subtotal">$' + (pr * q).toFixed(2) + '</div></div></div>';
+    }).join('') || '<div style="text-align:center;padding:20px;color:#94a3b8;">Sin productos en este pedido</div>';
+
+    var totalUSD = pedido.totalUSD || pedido.total_usd || items.reduce(function(s, it) { return s + (it.precio || it.price || 0) * (it.cantidad || it.quantity || 1); }, 0);
+    var totalBS = pedido.totalBS || pedido.total_bs || 0;
+    if (!totalBS) {
+      // try to fetch tasa from localStorage
+      var modo = localStorage.getItem('modoTasa');
+      var tasa = parseFloat(localStorage.getItem(modo === 'auto' ? 'tasaAuto' : 'tasaCambio')) || 0;
+      if (tasa > 0) totalBS = totalUSD * tasa;
+    }
+
+    var nombre = pedido.userNombre || pedido.user_name || '';
+    var tel = pedido.userTel || pedido.user_phone || '';
+    var email = pedido.userEmail || pedido.user_email || '';
+    var fecha = pedido.fecha || pedido.fechaCompleta || pedido.created_at || '';
+    var estado = pedido.estado || pedido.status || 'pendiente';
+
+    var contenido = document.getElementById('contenido');
+    contenido.innerHTML = '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+      + '<h2 style="margin:0;">📦 Productos</h2>'
+      + estadoBadge(estado)
+      + '</div>'
+      + itemsHtml
+      + '<div class="total-row total"><span>Total</span><span>$' + totalUSD.toFixed(2) + '</span></div>'
+      + (totalBS > 0 ? '<div class="total-row" style="color:#64748b;font-size:0.85rem;"><span>Bs.</span><span>Bs. ' + totalBS.toFixed(2) + '</span></div>' : '')
+      + '</div>';
+
+    if (nombre || tel || email) {
+      contenido.innerHTML += '<div class="card"><h2>👤 Cliente</h2><div class="cliente-info">'
+        + (nombre ? '<div><div class="label">Nombre</div>' + nombre + '</div>' : '')
+        + (tel ? '<div><div class="label">Teléfono</div>' + tel + '</div>' : '')
+        + (email ? '<div><div class="label">Email</div>' + email + '</div>' : '')
+        + '<div><div class="label">Fecha</div>' + formatearFecha(fecha) + '</div>'
+        + '</div></div>';
+    }
+
+    // Update OG tags for WhatsApp preview
+    var firstItem = items[0];
+    if (firstItem) {
+      var firstFoto = getFoto(firstItem.nombre || firstItem.name);
+      if (firstFoto) {
+        var ogImg = document.querySelector('meta[property="og:image"]');
+        if (ogImg) ogImg.setAttribute('content', firstFoto);
+      }
+    }
+    var ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', items.length + ' productos - Total: $' + totalUSD.toFixed(2));
+    var ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', 'Pedido #' + orderId + ' - Lettering Venezuela');
+    document.title = 'Pedido #' + orderId + ' - Lettering Venezuela';
+  };
+
+  // Try localStorage first
+  try {
+    var pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
+    var found = pedidos.find(function(p) { return p.id === orderId || p.order_id === orderId; });
+    if (found) {
+      renderOrder(found);
+      return;
+    }
+  } catch(e) {}
+
+  // Try Supabase
+  if (window.DB && typeof window.DB.getOrders === 'function') {
+    window.DB.getOrders().then(function(orders) {
+      var found = orders.find(function(o) { return o.order_id === orderId || String(o.id) === orderId; });
+      if (found) {
+        renderOrder(found);
+      } else {
+        document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">😕</div><p>Pedido <strong>#' + orderId + '</strong> no encontrado.</p></div>';
+      }
+    }).catch(function() {
+      document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">😕</div><p>Pedido no encontrado.</p></div>';
+    });
+  } else {
+    document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">😕</div><p>Pedido <strong>#' + orderId + '</strong> no encontrado.</p></div>';
+  }
+})();
+</script>
+</body>
+</html>
