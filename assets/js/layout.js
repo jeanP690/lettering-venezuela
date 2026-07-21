@@ -411,4 +411,11 @@
     window.addEventListener('scroll', function() {
         scrollBtn.style.display = window.scrollY > 400 ? 'flex' : 'none';
     });
+
+    // Recargar datos cuando el dashboard guarda cambios en otra pestaña
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'ultimaActualizacion') {
+            location.reload();
+        }
+    });
 })();

@@ -2841,6 +2841,7 @@ function actualizarSistema() {
     safeSetItem('clientes', JSON.stringify(clientes));
     safeSetItem('categoriasObj', JSON.stringify(categories));
     safeSetItem('marcasObj', JSON.stringify(marcas));
+    localStorage.setItem('ultimaActualizacion', Date.now());
     actualizarDashboard();
 }
 
