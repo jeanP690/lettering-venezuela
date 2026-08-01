@@ -667,55 +667,6 @@
                     cambios = true;
                 }
             }
-                });
-                if (cambiosPedidos) {
-                    localStorage.setItem('pedidosPendientes', JSON.stringify(Object.values(mapaPedidos)));
-                    cambios = true;
-                }
-            }
-
-            // 3. Clientes / ventas (fusionar por nombre|tel|fecha|total)
-            var ventasNube = await window.DB.getSales();
-            if (ventasNube && ventasNube.length > 0) {
-                var clientesLocal = JSON.parse(localStorage.getItem('clientes') || '[]');
-                var clavesLocales = {};
-                clientesLocal.forEach(function (cl) {
-                    var key = (cl.nombre || '') + '|' + (cl.tel || '') + '|' + (cl.fechaRegistro || '') + '|' + parseFloat(cl.total || 0);
-                    clavesLocales[key] = true;
-                });
-                var agregados = 0;
-                ventasNube.forEach(function (s) {
-                    var cli = s.clients || {};
-                    var key = (cli.name || '') + '|' + (cli.phone || '') + '|' + (s.sale_date || '') + '|' + parseFloat(s.total_usd || 0);
-                    if (clavesLocales[key]) return;
-                    var items = s.sale_items || [];
-                    var fotosProd = (s.sale_photos || []).filter(function (ph) { return ph.photo_type === 'product'; }).map(function (ph) { return ph.url; });
-                    var recibos = (s.sale_photos || []).filter(function (ph) { return ph.photo_type === 'receipt'; }).map(function (ph) { return ph.url; });
-                    var abonos = (s.payment_records || []).map(function (ab) {
-                        return { fecha: ab.payment_date || '', usd: parseFloat(ab.usd_amount) || 0, bs: parseFloat(ab.bs_amount) || 0, tasa: parseFloat(ab.tasa) || 0 };
-                    });
-                    clientesLocal.push({
-                        fechaRegistro: s.sale_date || '',
-                        nombre: cli.name || '',
-                        tel: cli.phone || '',
-                        productos: items.map(function (it) { return it.product_name; }),
-                        cantidades: items.map(function (it) { return it.quantity; }),
-                        total: parseFloat(s.total_usd) || 0,
-                        totalBs: parseFloat(s.total_bs) || 0,
-                        pagado: parseFloat(s.paid_usd) || 0,
-                        pagadoBs: parseFloat(s.paid_bs) || 0,
-                        fotoProducto: fotosProd,
-                        recibo: recibos,
-                        tasa: 0,
-                        abonos: abonos
-                    });
-                    agregados++;
-                });
-                if (agregados > 0) {
-                    localStorage.setItem('clientes', JSON.stringify(clientesLocal));
-                    cambios = true;
-                }
-            }
 
             if (cambios) {
                 console.log('[Supabase] Cambios descargados desde la nube, recargando...');
