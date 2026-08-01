@@ -488,25 +488,133 @@
         }
     }
 
-    // ========== CARGA INICIAL ==========
-    async function cargarDatosIniciales() {
+    // ========== DESCARGAR DATOS DESDE SUPABASE ==========
+    // Trae los datos mas recientes de la nube al localStorage local.
+    // Se llama al abrir el dashboard para que los cambios de otros
+    // dispositivos se reflejen. Si hay cambios, recarga la pagina.
+    async function sincronizarDesdeNube() {
         var client = getClient();
         if (!client) return;
         try {
-            // Intentar cargar productos desde Supabase si localStorage esta vacio
-            var inv;
-            try { inv = JSON.parse(localStorage.getItem('inventario')) || []; } catch (e) { inv = []; }
-            if (inv.length === 0) {
-                var prods = await window.DB.getProducts();
-                if (prods && prods.length > 0) {
-                    localStorage.setItem('inventario', JSON.stringify(prods));
+            var cambios = false;
+
+            // 1. Productos / categorias / marcas
+            var prods = await window.DB.getProducts();
+            var cats = await window.DB.getCategories();
+            var brs = await window.DB.getBrands();
+            if (prods && prods.length > 0) {
+                var invStr = JSON.stringify(prods);
+                if ((localStorage.getItem('inventario') || '[]') !== invStr) {
+                    localStorage.setItem('inventario', invStr);
+                    cambios = true;
                 }
             }
-        } catch (e) {}
+            if (cats && cats.length > 0) {
+                var catStr = JSON.stringify(cats);
+                if ((localStorage.getItem('categoriasObj') || '[]') !== catStr) {
+                    localStorage.setItem('categoriasObj', catStr);
+                    cambios = true;
+                }
+            }
+            if (brs && brs.length > 0) {
+                var brStr = JSON.stringify(brs);
+                if ((localStorage.getItem('marcasObj') || '[]') !== brStr) {
+                    localStorage.setItem('marcasObj', brStr);
+                    cambios = true;
+                }
+            }
+
+            // 2. Pedidos (fusionar por id, estado desde la nube)
+            var pedidosNube = await window.DB.getOrders();
+            if (pedidosNube && pedidosNube.length > 0) {
+                var pedidosLocal = JSON.parse(localStorage.getItem('pedidosPendientes') || '[]');
+                var mapaPedidos = {};
+                pedidosLocal.forEach(function (pl) { mapaPedidos[pl.id] = pl; });
+                var cambiosPedidos = false;
+                pedidosNube.forEach(function (o) {
+                    var local = mapaPedidos[o.order_id];
+                    if (!local) {
+                        var items = [];
+                        try { items = JSON.parse(o.items_json || '[]'); } catch (e) {}
+                        mapaPedidos[o.order_id] = {
+                            id: o.order_id,
+                            fecha: (o.created_at || new Date().toISOString()).slice(0, 10),
+                            fechaCompleta: o.created_at || new Date().toISOString(),
+                            items: items,
+                            totalUSD: parseFloat(o.total_usd) || 0,
+                            totalBS: parseFloat(o.total_bs) || 0,
+                            estado: o.status || 'pendiente',
+                            userNombre: o.user_name || '',
+                            userTel: o.user_phone || '',
+                            userId: o.user_id || '',
+                            userEmail: o.user_email || ''
+                        };
+                        cambiosPedidos = true;
+                    } else if (o.status && local.estado !== o.status) {
+                        local.estado = o.status;
+                        cambiosPedidos = true;
+                    }
+                });
+                if (cambiosPedidos) {
+                    localStorage.setItem('pedidosPendientes', JSON.stringify(Object.values(mapaPedidos)));
+                    cambios = true;
+                }
+            }
+
+            // 3. Clientes / ventas (fusionar por nombre|tel|fecha|total)
+            var ventasNube = await window.DB.getSales();
+            if (ventasNube && ventasNube.length > 0) {
+                var clientesLocal = JSON.parse(localStorage.getItem('clientes') || '[]');
+                var clavesLocales = {};
+                clientesLocal.forEach(function (cl) {
+                    var key = (cl.nombre || '') + '|' + (cl.tel || '') + '|' + (cl.fechaRegistro || '') + '|' + parseFloat(cl.total || 0);
+                    clavesLocales[key] = true;
+                });
+                var agregados = 0;
+                ventasNube.forEach(function (s) {
+                    var cli = s.clients || {};
+                    var key = (cli.name || '') + '|' + (cli.phone || '') + '|' + (s.sale_date || '') + '|' + parseFloat(s.total_usd || 0);
+                    if (clavesLocales[key]) return;
+                    var items = s.sale_items || [];
+                    var fotosProd = (s.sale_photos || []).filter(function (ph) { return ph.photo_type === 'product'; }).map(function (ph) { return ph.url; });
+                    var recibos = (s.sale_photos || []).filter(function (ph) { return ph.photo_type === 'receipt'; }).map(function (ph) { return ph.url; });
+                    var abonos = (s.payment_records || []).map(function (ab) {
+                        return { fecha: ab.payment_date || '', usd: parseFloat(ab.usd_amount) || 0, bs: parseFloat(ab.bs_amount) || 0, tasa: parseFloat(ab.tasa) || 0 };
+                    });
+                    clientesLocal.push({
+                        fechaRegistro: s.sale_date || '',
+                        nombre: cli.name || '',
+                        tel: cli.phone || '',
+                        productos: items.map(function (it) { return it.product_name; }),
+                        cantidades: items.map(function (it) { return it.quantity; }),
+                        total: parseFloat(s.total_usd) || 0,
+                        totalBs: parseFloat(s.total_bs) || 0,
+                        pagado: parseFloat(s.paid_usd) || 0,
+                        pagadoBs: parseFloat(s.paid_bs) || 0,
+                        fotoProducto: fotosProd,
+                        recibo: recibos,
+                        tasa: 0,
+                        abonos: abonos
+                    });
+                    agregados++;
+                });
+                if (agregados > 0) {
+                    localStorage.setItem('clientes', JSON.stringify(clientesLocal));
+                    cambios = true;
+                }
+            }
+
+            if (cambios) {
+                console.log('[Supabase] Cambios descargados desde la nube, recargando...');
+                location.reload();
+            }
+        } catch (e) {
+            console.warn('[Supabase] Error sincronizarDesdeNube:', e);
+        }
     }
 
-    // ========== EXN ==========
     window.DashboardSupabase = {
+        sincronizarDesdeNube: sincronizarDesdeNube,
         syncCategories: syncCategories,
         syncBrands: syncBrands,
         syncProducts: syncProducts,
@@ -516,15 +624,36 @@
         migrateImage: migrateImage
     };
 
+    // Al cargar el dashboard: primero bajar datos de la nube,
+    // pero solo una vez el usuario haya iniciado sesion.
+    function esperarAutenticacion(cb) {
+        var checks = 0;
+        var timer = setInterval(function () {
+            checks++;
+            if (localStorage.getItem('dash_authenticated') === 'true') {
+                clearInterval(timer);
+                cb();
+            } else if (checks > 150) {
+                clearInterval(timer);
+            }
+        }, 100);
+    }
+
+    function iniciarCargaNube() {
+        checkLoginGate();
+        hookActualizarSistema();
+        esperarAutenticacion(function () {
+            sincronizarDesdeNube().then(function () {
+                cargarDatosIniciales();
+            });
+        });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
-            checkLoginGate();
-            cargarDatosIniciales();
-            hookActualizarSistema();
+            iniciarCargaNube();
         });
     } else {
-        checkLoginGate();
-        cargarDatosIniciales();
-        hookActualizarSistema();
+        iniciarCargaNube();
     }
 })();

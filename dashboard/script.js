@@ -3532,6 +3532,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ========== MIGRACION A SUPABASE ==========
+    window.sincronizarDesdeNubeManual = function() {
+        if (!window.DashboardSupabase || !window.DashboardSupabase.sincronizarDesdeNube) {
+            mostrarToastNotificacion('Supabase no disponible', 'error');
+            return;
+        }
+        mostrarToastNotificacion('🔄 Sincronizando desde la nube...');
+        window.DashboardSupabase.sincronizarDesdeNube().then(function() {
+            mostrarToastNotificacion('✅ Sincronización completada');
+        });
+    };
+
     window.migrarDatosALaNube = async function() {
         var btn = document.getElementById('btn-migrar');
         var status = document.getElementById('migracion-status');
