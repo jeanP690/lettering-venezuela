@@ -3,11 +3,69 @@
 
     var _inactivityTimer;
 
+    function getClient() {
+        return window.Supabase && typeof window.Supabase.getClient === 'function'
+            ? window.Supabase.getClient() : null;
+    }
+
+    // Sincroniza los usuarios locales hacia Supabase (upsert por usuario)
+    window.syncAdminUsersToSupabase = async function syncAdminUsersToSupabase() {
+        var client = getClient();
+        if (!client) return;
+        var users;
+        try { users = JSON.parse(localStorage.getItem('adminUsers')) || []; } catch (e) { return; }
+        if (!users.length) return;
+        for (var i = 0; i < users.length; i++) {
+            try {
+                await client.from('admin_users').upsert({
+                    usuario: users[i].usuario,
+                    pass: users[i].pass || '',
+                    rol: users[i].rol || 'editor',
+                    creado: users[i].creado || new Date().toISOString()
+                }, { onConflict: 'usuario' });
+            } catch (e) { console.warn('[Supabase] Error sync admin user:', e); }
+        }
+    };
+
+    // Carga los usuarios remotos y los agrega al localStorage (sin pisar los locales)
+    window.loadAdminUsersFromSupabase = async function loadAdminUsersFromSupabase() {
+        var client = getClient();
+        if (!client) return;
+        try {
+            var { data } = await client.from('admin_users').select('*');
+            if (!data || !data.length) return;
+            var local = JSON.parse(localStorage.getItem('adminUsers')) || [];
+            var map = {};
+            local.forEach(function (u) { map[u.usuario] = u; });
+            data.forEach(function (row) {
+                if (!map[row.usuario]) {
+                    map[row.usuario] = {
+                        usuario: row.usuario,
+                        pass: row.pass || '',
+                        rol: row.rol || 'editor',
+                        creado: row.creado || new Date().toISOString()
+                    };
+                }
+            });
+            localStorage.setItem('adminUsers', JSON.stringify(Object.values(map)));
+        } catch (e) { console.warn('[Supabase] Error loading admin users:', e); }
+    };
+
+    // Elimina un usuario remoto de Supabase
+    window.deleteAdminUserFromSupabase = async function deleteAdminUserFromSupabase(usuario) {
+        var client = getClient();
+        if (!client) return;
+        try {
+            await client.from('admin_users').delete().eq('usuario', usuario);
+        } catch (e) { console.warn('[Supabase] Error delete admin user:', e); }
+    };
+
     window.initAdminUsers = function initAdminUsers() {
         var users = JSON.parse(localStorage.getItem('adminUsers') || '[]');
         if (!users.length) {
             users = [{ usuario: 'admin', pass: '__PLAINTEXT__admin123', rol: 'admin', creado: new Date().toISOString() }];
             localStorage.setItem('adminUsers', JSON.stringify(users));
+            window.syncAdminUsersToSupabase();
         }
         return users;
     };
@@ -73,6 +131,7 @@
                 err.style.display = 'block';
                 return;
             }
+            await window.loadAdminUsersFromSupabase();
             var users = JSON.parse(localStorage.getItem('adminUsers') || '[]');
             var found = null;
             var inputHash = await sha256(p);
@@ -93,6 +152,7 @@
                     if (!isSha256Hash(sp)) {
                         x.pass = inputHash;
                         localStorage.setItem('adminUsers', JSON.stringify(users));
+                        window.syncAdminUsersToSupabase();
                     }
                     break;
                 }

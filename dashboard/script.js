@@ -2805,8 +2805,10 @@ window.eliminarAdminUser = function(index) {
         return;
     }
     if (!confirm('¿Eliminar usuario "' + users[index].usuario + '"?')) return;
+    var usuarioEliminado = users[index].usuario;
     users.splice(index, 1);
     localStorage.setItem('adminUsers', JSON.stringify(users));
+    if (window.deleteAdminUserFromSupabase) window.deleteAdminUserFromSupabase(usuarioEliminado);
     renderizarAdminUsers();
     mostrarToastNotificacion('Usuario eliminado');
 };
@@ -2815,6 +2817,14 @@ window.resetAdminUsers = function() {
     if (!confirm('¿Restaurar el admin por defecto? Esto eliminará todos los usuarios actuales.')) return;
     var defaultUsers = [{ usuario: 'admin', pass: '__PLAINTEXT__admin123', rol: 'admin', creado: new Date().toISOString() }];
     localStorage.setItem('adminUsers', JSON.stringify(defaultUsers));
+    if (window.Supabase && window.Supabase.getClient) {
+        var client = window.Supabase.getClient();
+        if (client) {
+            client.from('admin_users').delete().neq('usuario', 'admin').then(function() {
+                if (window.syncAdminUsersToSupabase) window.syncAdminUsersToSupabase();
+            });
+        }
+    }
     localStorage.removeItem('dash_authenticated');
     localStorage.removeItem('dash_user');
     localStorage.removeItem('dash_user_rol');
@@ -3438,7 +3448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarToastNotificacion('Información de contacto guardada');
     });
 
-    document.getElementById('form-cambiar-pass')?.addEventListener('submit', (e) => {
+    document.getElementById('form-cambiar-pass')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         var actual = document.getElementById('cfg-pass-actual').value;
         var nueva = document.getElementById('cfg-pass-nueva').value;
@@ -3447,7 +3457,18 @@ document.addEventListener('DOMContentLoaded', () => {
         var currentUser = localStorage.getItem('dash_user') || 'admin';
         var users = JSON.parse(localStorage.getItem('adminUsers') || '[]');
         var userObj = users.find(function(u) { return u.usuario === currentUser; });
-        if (!userObj || btoa(actual) !== userObj.pass) {
+        if (!userObj) {
+            error.textContent = 'Usuario no encontrado';
+            error.style.display = 'block';
+            return;
+        }
+        var sp = userObj.pass || '';
+        var inputHash = await sha256(actual);
+        var passOk = false;
+        if (isSha256Hash(sp)) passOk = (sp === inputHash);
+        else if (sp.indexOf('__PLAINTEXT__') === 0) passOk = (sp.replace('__PLAINTEXT__', '') === actual);
+        else { try { passOk = (atob(sp) === actual); } catch (e) {} }
+        if (!passOk) {
             error.textContent = 'La contraseña actual no es correcta';
             error.style.display = 'block';
             return;
@@ -3463,8 +3484,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         error.style.display = 'none';
-        userObj.pass = btoa(nueva);
+        userObj.pass = '__PLAINTEXT__' + nueva;
         localStorage.setItem('adminUsers', JSON.stringify(users));
+        if (window.syncAdminUsersToSupabase) window.syncAdminUsersToSupabase();
         registrarActividad('Contraseña cambiada', 'Usuario: ' + currentUser);
         mostrarToastNotificacion('✅ Contraseña cambiada exitosamente');
         document.getElementById('form-cambiar-pass').reset();
@@ -3491,6 +3513,7 @@ document.addEventListener('DOMContentLoaded', () => {
         err.style.display = 'none';
         users.push({ usuario: user, pass: '__PLAINTEXT__' + pass, rol: rol, creado: new Date().toISOString() });
         localStorage.setItem('adminUsers', JSON.stringify(users));
+        if (window.syncAdminUsersToSupabase) window.syncAdminUsersToSupabase();
         renderizarAdminUsers();
         document.getElementById('form-add-admin').reset();
         registrarActividad('Usuario creado', 'Usuario: ' + user + ', Rol: ' + rol);

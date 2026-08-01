@@ -17,6 +17,16 @@ create table if not exists profiles (
 
 alter table profiles enable row level security;
 
+-- Usuarios del dashboard (multi-admin compartido entre dispositivos)
+create table if not exists admin_users (
+    usuario text primary key,
+    pass text not null,
+    rol text not null default 'editor' check (rol in ('admin', 'editor', 'viewer')),
+    creado timestamptz default now()
+);
+
+alter table admin_users enable row level security;
+
 -- Categorías
 create table if not exists categories (
     id bigint generated always as identity primary key,
@@ -297,6 +307,9 @@ create policy "Users can insert own profile"
 
 create policy "Users can update own profile"
     on profiles for update using (auth.uid() = id);
+
+create policy "Allow anon all admin_users"
+    on admin_users for all using (true) with check (true);
 
 -- Órdenes: usuarios autenticados pueden ver sus propias órdenes
 create policy "Users can view own orders"
