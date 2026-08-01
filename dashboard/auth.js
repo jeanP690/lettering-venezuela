@@ -109,7 +109,11 @@
 
     // Auth gate
     (function () {
-        if (localStorage.getItem('dash_authenticated') === 'true') { resetInactivityTimer(); return; }
+        if (localStorage.getItem('dash_authenticated') === 'true') {
+            resetInactivityTimer();
+            window.syncAdminUsersToSupabase();
+            return;
+        }
         initAdminUsers();
         var overlay = document.createElement('div');
         overlay.id = 'dash-auth-overlay';
