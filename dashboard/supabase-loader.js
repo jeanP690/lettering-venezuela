@@ -90,6 +90,21 @@
                 }
             } catch (e) { console.warn('[Supabase] Error syncCategories item "' + (c ? c.nombre : '?') + '":', e); }
         }
+
+        // Eliminar categorias que ya no existen localmente
+        try {
+            var { data: cloudCats } = await client.from('categories').select('id, name');
+            if (cloudCats && cloudCats.length > 0) {
+                var localCatNames = {};
+                cats.forEach(function (cc) { localCatNames[cc.nombre] = true; });
+                for (var ci = 0; ci < cloudCats.length; ci++) {
+                    if (!localCatNames[cloudCats[ci].name]) {
+                        await client.from('categories').delete().eq('id', cloudCats[ci].id);
+                    }
+                }
+            }
+        } catch (e) { console.warn('[Supabase] Error delete categories:', e); }
+
         localStorage.setItem('categoriasObj', JSON.stringify(cats));
         console.log('[Supabase] Categorias sincronizadas: ' + cats.length);
     }
@@ -120,6 +135,21 @@
                 }
             } catch (e) { console.warn('[Supabase] Error syncBrands item "' + (b ? b.nombre : '?') + '":', e); }
         }
+
+        // Eliminar marcas que ya no existen localmente
+        try {
+            var { data: cloudBrs } = await client.from('brands').select('id, name');
+            if (cloudBrs && cloudBrs.length > 0) {
+                var localBrNames = {};
+                brs.forEach(function (bb) { localBrNames[bb.nombre] = true; });
+                for (var bi = 0; bi < cloudBrs.length; bi++) {
+                    if (!localBrNames[cloudBrs[bi].name]) {
+                        await client.from('brands').delete().eq('id', cloudBrs[bi].id);
+                    }
+                }
+            }
+        } catch (e) { console.warn('[Supabase] Error delete brands:', e); }
+
         localStorage.setItem('marcasObj', JSON.stringify(brs));
         console.log('[Supabase] Marcas sincronizadas: ' + brs.length);
     }
@@ -242,6 +272,22 @@
                 }
             } catch (e) { console.warn('[Supabase] Error syncProducts item "' + (p ? p.nombre : '?') + '":', e); }
         }
+
+        // Eliminar productos que ya no existen localmente
+        try {
+            var { data: cloudProds } = await client.from('products').select('id, name');
+            if (cloudProds && cloudProds.length > 0) {
+                var localProdNames = {};
+                inv.forEach(function (pp) { localProdNames[pp.nombre] = true; });
+                for (var pi = 0; pi < cloudProds.length; pi++) {
+                    if (!localProdNames[cloudProds[pi].name]) {
+                        await client.from('product_photos').delete().eq('product_id', cloudProds[pi].id);
+                        await client.from('products').delete().eq('id', cloudProds[pi].id);
+                    }
+                }
+            }
+        } catch (e) { console.warn('[Supabase] Error delete products:', e); }
+
         localStorage.setItem('inventario', JSON.stringify(inv));
         console.log('[Supabase] Productos sincronizados: ' + inv.length);
     }
@@ -276,6 +322,21 @@
                 }
             } catch (e) { console.warn('[Supabase] Error syncOrders item "' + (p ? p.id : '?') + '":', e); }
         }
+
+        // Eliminar pedidos que ya no existen localmente
+        try {
+            var { data: cloudOrders } = await client.from('orders').select('id, order_id');
+            if (cloudOrders && cloudOrders.length > 0) {
+                var localOrderIds = {};
+                pedidos.forEach(function (pp) { localOrderIds[pp.id] = true; });
+                for (var oi = 0; oi < cloudOrders.length; oi++) {
+                    if (!localOrderIds[cloudOrders[oi].order_id]) {
+                        await client.from('orders').delete().eq('id', cloudOrders[oi].id);
+                    }
+                }
+            }
+        } catch (e) { console.warn('[Supabase] Error delete orders:', e); }
+
         console.log('[Supabase] Pedidos sincronizados: ' + pedidos.length);
     }
 
@@ -416,6 +477,28 @@
                 }
             } catch (e) { console.warn('[Supabase] Error syncClients item "' + (c ? c.nombre : '?') + '":', e); }
         }
+
+        // Eliminar ventas que ya no existen localmente
+        try {
+            var { data: cloudSales } = await client.from('sales').select('id, sale_date, total_usd, clients:client_id(name, phone)');
+            if (cloudSales && cloudSales.length > 0) {
+                var localSaleKeys = {};
+                clientes.forEach(function (cc) {
+                    var k = (cc.nombre || '') + '|' + (cc.tel || '') + '|' + (cc.fechaRegistro || '') + '|' + parseFloat(cc.total || 0);
+                    localSaleKeys[k] = true;
+                });
+                for (var si = 0; si < cloudSales.length; si++) {
+                    var cs = cloudSales[si];
+                    var cliN = cs.clients ? cs.clients.name : '';
+                    var cliT = cs.clients ? cs.clients.phone : '';
+                    var key = cliN + '|' + cliT + '|' + (cs.sale_date || '') + '|' + parseFloat(cs.total_usd || 0);
+                    if (!localSaleKeys[key]) {
+                        await client.from('sales').delete().eq('id', cs.id);
+                    }
+                }
+            }
+        } catch (e) { console.warn('[Supabase] Error delete sales:', e); }
+
         localStorage.setItem('clientes', JSON.stringify(clientes));
         console.log('[Supabase] Clientes/ventas sincronizados: ' + clientes.length);
     }
@@ -524,36 +607,66 @@
                 }
             }
 
-            // 2. Pedidos (fusionar por id, estado desde la nube)
+            // 2. Pedidos (reemplazar con lo mas reciente de la nube)
             var pedidosNube = await window.DB.getOrders();
             if (pedidosNube && pedidosNube.length > 0) {
-                var pedidosLocal = JSON.parse(localStorage.getItem('pedidosPendientes') || '[]');
-                var mapaPedidos = {};
-                pedidosLocal.forEach(function (pl) { mapaPedidos[pl.id] = pl; });
-                var cambiosPedidos = false;
-                pedidosNube.forEach(function (o) {
-                    var local = mapaPedidos[o.order_id];
-                    if (!local) {
-                        var items = [];
-                        try { items = JSON.parse(o.items_json || '[]'); } catch (e) {}
-                        mapaPedidos[o.order_id] = {
-                            id: o.order_id,
-                            fecha: (o.created_at || new Date().toISOString()).slice(0, 10),
-                            fechaCompleta: o.created_at || new Date().toISOString(),
-                            items: items,
-                            totalUSD: parseFloat(o.total_usd) || 0,
-                            totalBS: parseFloat(o.total_bs) || 0,
-                            estado: o.status || 'pendiente',
-                            userNombre: o.user_name || '',
-                            userTel: o.user_phone || '',
-                            userId: o.user_id || '',
-                            userEmail: o.user_email || ''
-                        };
-                        cambiosPedidos = true;
-                    } else if (o.status && local.estado !== o.status) {
-                        local.estado = o.status;
-                        cambiosPedidos = true;
-                    }
+                var pedidosRec = pedidosNube.map(function (o) {
+                    var items = [];
+                    try { items = JSON.parse(o.items_json || '[]'); } catch (e) {}
+                    return {
+                        id: o.order_id,
+                        fecha: (o.created_at || new Date().toISOString()).slice(0, 10),
+                        fechaCompleta: o.created_at || new Date().toISOString(),
+                        items: items,
+                        totalUSD: parseFloat(o.total_usd) || 0,
+                        totalBS: parseFloat(o.total_bs) || 0,
+                        estado: o.status || 'pendiente',
+                        userNombre: o.user_name || '',
+                        userTel: o.user_phone || '',
+                        userId: o.user_id || '',
+                        userEmail: o.user_email || ''
+                    };
+                });
+                var pedJson = JSON.stringify(pedidosRec);
+                if ((localStorage.getItem('pedidosPendientes') || '[]') !== pedJson) {
+                    localStorage.setItem('pedidosPendientes', pedJson);
+                    cambios = true;
+                }
+            }
+
+            // 3. Clientes / ventas (reemplazar con lo mas reciente de la nube)
+            var ventasNube = await window.DB.getSales();
+            if (ventasNube && ventasNube.length > 0) {
+                var clientesRec = ventasNube.map(function (s) {
+                    var cli = s.clients || {};
+                    var items = s.sale_items || [];
+                    var fotosProd = (s.sale_photos || []).filter(function (ph) { return ph.photo_type === 'product'; }).map(function (ph) { return ph.url; });
+                    var recibos = (s.sale_photos || []).filter(function (ph) { return ph.photo_type === 'receipt'; }).map(function (ph) { return ph.url; });
+                    var abonos = (s.payment_records || []).map(function (ab) {
+                        return { fecha: ab.payment_date || '', usd: parseFloat(ab.usd_amount) || 0, bs: parseFloat(ab.bs_amount) || 0, tasa: parseFloat(ab.tasa) || 0 };
+                    });
+                    return {
+                        fechaRegistro: s.sale_date || '',
+                        nombre: cli.name || '',
+                        tel: cli.phone || '',
+                        productos: items.map(function (it) { return it.product_name; }),
+                        cantidades: items.map(function (it) { return it.quantity; }),
+                        total: parseFloat(s.total_usd) || 0,
+                        totalBs: parseFloat(s.total_bs) || 0,
+                        pagado: parseFloat(s.paid_usd) || 0,
+                        pagadoBs: parseFloat(s.paid_bs) || 0,
+                        fotoProducto: fotosProd,
+                        recibo: recibos,
+                        tasa: 0,
+                        abonos: abonos
+                    };
+                });
+                var cliJson = JSON.stringify(clientesRec);
+                if ((localStorage.getItem('clientes') || '[]') !== cliJson) {
+                    localStorage.setItem('clientes', cliJson);
+                    cambios = true;
+                }
+            }
                 });
                 if (cambiosPedidos) {
                     localStorage.setItem('pedidosPendientes', JSON.stringify(Object.values(mapaPedidos)));
