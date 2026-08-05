@@ -708,7 +708,9 @@
         hookActualizarSistema();
         esperarAutenticacion(function () {
             sincronizarDesdeNube().then(function () {
-                cargarDatosIniciales();
+                if (typeof window.actualizarDashboard === 'function') {
+                    window.actualizarDashboard();
+                }
             });
         });
     }
