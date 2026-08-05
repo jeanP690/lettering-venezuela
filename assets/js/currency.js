@@ -49,6 +49,23 @@
         _initialized = true;
         _initCallbacks.forEach(function (cb) { cb(); });
         _initCallbacks = [];
+        // Notificar a las paginas que la tasa ya esta cargada para
+        // re-renderizar los precios con la tasa real de la base de datos.
+        dispatchTasaCambiada();
+        // En modo auto, buscar la tasa del dia si esta vencida (>24h) o ausente.
+        if (_mode === 'auto') {
+            var ultima = localStorage.getItem('ultimaActualizacionTasa');
+            var necesita = true;
+            if (ultima) {
+                try {
+                    var diffHoras = (Date.now() - new Date(ultima).getTime()) / 3600000;
+                    if (diffHoras < 24) necesita = false;
+                } catch (e) {}
+            }
+            if (necesita) {
+                fetchTasaAPI().catch(function () {});
+            }
+        }
     }
 
     function dispatchTasaCambiada() {
