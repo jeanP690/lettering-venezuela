@@ -39,6 +39,18 @@
   .header p{color:#64748b;font-size:0.85rem;margin-top:4px}
   .error-state{text-align:center;padding:60px 20px;color:#94a3b8}
   .error-state .icon{font-size:3rem;margin-bottom:16px}
+  .estado-card{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:16px;margin-bottom:16px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,0.08)}
+  .estado-card .estado-icon{font-size:1.8rem}
+  .estado-card .estado-txt{flex:1;min-width:0}
+  .estado-card .estado-title{font-weight:700;font-size:1.05rem}
+  .estado-card .estado-sub{font-size:0.8rem;opacity:.92;margin-top:3px}
+  .estado-card.estado-pendiente{background:#b45309}
+  .estado-card.estado-aprobado{background:#1d4ed8}
+  .estado-card.estado-entregado{background:#15803d}
+  .estado-card.estado-cancelado{background:#b91c1c}
+  .expira-note{font-size:0.78rem;color:#64748b;margin-top:10px;text-align:center}
+  .expired-card{text-align:center;padding:50px 20px;color:#94a3b8}
+  .expired-card .icon{font-size:3rem;margin-bottom:14px}
   .loading{text-align:center;padding:60px 20px;color:#94a3b8}
   .loading .spinner{width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -73,6 +85,29 @@
     var map = { pendiente: 'Pendiente ⏳', aprobado: 'Aprobado ✅', entregado: 'Entregado 📦', cancelado: 'Cancelado ❌' };
     var cls = { pendiente: 'pendiente', aprobado: 'aprobado', entregado: 'entregado', cancelado: 'cancelado' };
     return '<span class="badge badge-' + (cls[estado] || 'pendiente') + '">' + (map[estado] || 'Pendiente ⏳') + '</span>';
+  };
+
+  var ESTADOS_FINALES = { cancelado: true, entregado: true };
+  var ESTADO_INFO = {
+    pendiente: { icon: '⏳', cls: 'pendiente', title: 'Pedido pendiente', sub: 'Estamos esperando la confirmación de tu pedido.' },
+    aprobado:  { icon: '✅', cls: 'aprobado', title: 'Pedido aprobado', sub: 'Tu pedido está en preparación.' },
+    entregado: { icon: '📦', cls: 'entregado', title: 'Pedido entregado', sub: 'Tu pedido ya fue entregado. ¡Gracias!' },
+    cancelado: { icon: '❌', cls: 'cancelado', title: 'Pedido cancelado', sub: 'Este pedido fue cancelado.' }
+  };
+  var estadoCard = function(estado, expiraMs) {
+    var info = ESTADO_INFO[estado] || ESTADO_INFO.pendiente;
+    var html = '<div class="estado-card estado-' + info.cls + '">'
+      + '<div class="estado-icon">' + info.icon + '</div>'
+      + '<div class="estado-txt"><div class="estado-title">' + info.title + '</div>'
+      + '<div class="estado-sub">' + info.sub + '</div></div></div>';
+    if (ESTADOS_FINALES[estado] && expiraMs > 0) {
+      try {
+        var ex = new Date(expiraMs);
+        var expStr = ex.toLocaleString('es-VE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        html += '<div class="expira-note">⏱️ Este enlace expirará el ' + expStr + '.</div>';
+      } catch (e) {}
+    }
+    return html;
   };
 
   var formatearFecha = function(f) {
@@ -126,7 +161,23 @@
     var estado = pedido.estado || pedido.status || 'pendiente';
 
     var contenido = document.getElementById('contenido');
-    contenido.innerHTML = '<div class="card">'
+
+    // Expiración: el enlace dura 1 hora después de cancelar o finalizar el pedido.
+    var esFinal = ESTADOS_FINALES[estado] === true;
+    var expiraMs = 0;
+    var baseTime = pedido.updated_at || pedido.fechaCompleta || pedido.created_at || '';
+    if (baseTime) {
+      try { expiraMs = new Date(baseTime).getTime() + 3600000; } catch (e) { expiraMs = 0; }
+    }
+    if (esFinal && expiraMs > 0 && Date.now() > expiraMs) {
+      contenido.innerHTML = '<div class="expired-card"><div class="icon">🕓</div>'
+        + '<p style="font-weight:600;color:#64748b;">Este enlace ya expiró</p>'
+        + '<p style="font-size:0.85rem;margin-top:6px;">El pedido <strong>#' + orderId + '</strong> fue ' + (estado === 'cancelado' ? 'cancelado' : 'finalizado') + ' hace más de una hora. Por favor contáctanos para más información.</p></div>';
+      return;
+    }
+
+    contenido.innerHTML = estadoCard(estado, expiraMs)
+      + '<div class="card">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
       + '<h2 style="margin:0;">📦 Productos</h2>'
       + estadoBadge(estado)
@@ -161,30 +212,34 @@
     document.title = 'Pedido #' + orderId + ' - Lettering Venezuela';
   };
 
-  // Try localStorage first
-  try {
-    var pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
-    var found = pedidos.find(function(p) { return p.id === orderId || p.order_id === orderId; });
-    if (found) {
-      renderOrder(found);
-      return;
-    }
-  } catch(e) {}
+  // Búsqueda: la nube es la fuente de verdad (estado actualizado por el
+  // administrador). Si el pedido no está en la nube (guardado solo en local),
+  // se busca en localStorage como respaldo.
+  var renderOrderFromLocal = function() {
+    try {
+      var pedidos = JSON.parse(localStorage.getItem('pedidosPendientes')) || [];
+      var found = pedidos.find(function(p) { return p.id === orderId || p.order_id === orderId; });
+      if (found) { renderOrder(found); return true; }
+    } catch(e) {}
+    return false;
+  };
+  var notFound = function() {
+    document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">😕</div><p>Pedido <strong>#' + orderId + '</strong> no encontrado.</p></div>';
+  };
 
-  // Try Supabase
   if (window.DB && typeof window.DB.getOrders === 'function') {
     window.DB.getOrders().then(function(orders) {
       var found = orders.find(function(o) { return o.order_id === orderId || String(o.id) === orderId; });
-      if (found) {
-        renderOrder(found);
-      } else {
-        document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">😕</div><p>Pedido <strong>#' + orderId + '</strong> no encontrado.</p></div>';
-      }
+      if (found) { renderOrder(found); return; }
+      if (renderOrderFromLocal()) return;
+      notFound();
     }).catch(function() {
-      document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">😕</div><p>Pedido no encontrado.</p></div>';
+      if (renderOrderFromLocal()) return;
+      notFound();
     });
   } else {
-    document.getElementById('contenido').innerHTML = '<div class="error-state"><div class="icon">😕</div><p>Pedido <strong>#' + orderId + '</strong> no encontrado.</p></div>';
+    if (renderOrderFromLocal()) return;
+    notFound();
   }
 })();
 </script>
